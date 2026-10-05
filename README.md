@@ -2,6 +2,10 @@
 
 Caderno digital no estilo Notability/GoodNotes, com um assistente que **grava a aula, transcreve e gera um resumo fácil de entender**.
 
+## Versão para celular (link do Claude)
+
+`artifact/caderno-de-estudos.html` é uma versão que roda como página do claude.ai: abre no celular sem instalar nada e usa a sua conta Claude para os resumos (sem chave de API). Ela também analisa os **slides** da aula (PDF ou fotos), slide por slide, com o que pode cair na prova e o que o professor explicou em sala. Lá o microfone não está disponível, então a transcrição é colada (ex.: do gravador do celular) ou ditada pelo teclado.
+
 ## O que já funciona (MVP)
 
 - **Cadernos e páginas**: crie, renomeie e exclua cadernos; adicione páginas pautadas (formato A4).

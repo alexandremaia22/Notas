@@ -1,0 +1,1390 @@
+<title>Caderno de Estudos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400&family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&display=swap">
+<style>
+/* Layout: barra do caderno no topo; "Anotações" e "Aulas" lado a lado no desktop, em abas no celular. */
+:root {
+  --bg: #eef1f7;
+  --surface: #ffffff;
+  --surface-2: #e4e9f3;
+  --fg: #172033;
+  --muted: #5b6579;
+  --line: #d3dae8;
+  --ink: #1d3fc4;        /* azul de caneta esferográfica */
+  --ink-soft: #dfe6ff;
+  --marker: #ffe15a;     /* marca-texto */
+  --danger: #c22a2a;
+  --danger-soft: #fde8e8;
+  --ok: #17784a;
+  --ok-soft: #e1f5ea;
+  --warn: #8a5a00;
+  --warn-soft: #fff4d6;
+  --shadow: 0 1px 2px rgba(23, 32, 51, .08), 0 6px 20px rgba(23, 32, 51, .07);
+  --font-display: 'Bricolage Grotesque', 'Segoe UI', system-ui, sans-serif;
+  --font-body: 'Atkinson Hyperlegible', 'Segoe UI', system-ui, sans-serif;
+  --radius: 12px;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0f1420; --surface: #171e2d; --surface-2: #222b3e; --fg: #e7ecf6; --muted: #9aa5bb;
+    --line: #2d374d; --ink: #8ea6ff; --ink-soft: #24305a; --marker: #e8c93d;
+    --danger: #ff8080; --danger-soft: #3a1c22; --ok: #6ed39f; --ok-soft: #173326;
+    --warn: #f2c35b; --warn-soft: #382c12; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0f1420; --surface: #171e2d; --surface-2: #222b3e; --fg: #e7ecf6; --muted: #9aa5bb;
+  --line: #2d374d; --ink: #8ea6ff; --ink-soft: #24305a; --marker: #e8c93d;
+  --danger: #ff8080; --danger-soft: #3a1c22; --ok: #6ed39f; --ok-soft: #173326;
+  --warn: #f2c35b; --warn-soft: #382c12; --shadow: 0 1px 2px rgba(0,0,0,.4), 0 6px 20px rgba(0,0,0,.3);
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+body {
+  background: var(--bg); color: var(--fg);
+  font: 16px/1.5 var(--font-body);
+  -webkit-text-size-adjust: 100%;
+}
+* { box-sizing: border-box; }
+h1, h2, h3 { font-family: var(--font-display); text-wrap: balance; margin: 0; line-height: 1.2; }
+button, input, textarea, select { font: inherit; color: inherit; }
+button {
+  cursor: pointer; border: 1px solid var(--line); background: var(--surface);
+  border-radius: 10px; padding: 8px 14px; min-height: 40px;
+}
+button:hover:not(:disabled) { background: var(--surface-2); }
+button:disabled { opacity: .45; cursor: not-allowed; }
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+.primary { background: var(--ink); border-color: var(--ink); color: var(--surface); font-weight: 700; }
+.primary:hover:not(:disabled) { background: var(--ink); filter: brightness(1.1); }
+.ghost { border-color: transparent; background: transparent; }
+.danger-text { color: var(--danger); }
+.muted { color: var(--muted); }
+.small { font-size: 14px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+.app { display: flex; flex-direction: column; height: 100%; }
+.topbar {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 12px;
+  padding: 10px 16px; background: var(--surface); border-bottom: 1px solid var(--line);
+}
+.brand { font-size: 20px; font-weight: 800; letter-spacing: -.01em; margin-right: auto; }
+.brand span { color: var(--ink); }
+.notebook-picker { display: flex; gap: 6px; align-items: center; min-width: 0; flex: 1 1 260px; justify-content: flex-end; }
+.notebook-picker select {
+  min-width: 0; flex: 0 1 240px; min-height: 40px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface); padding: 6px 10px;
+}
+.tabs { display: none; gap: 4px; padding: 8px 16px 0; background: var(--surface); border-bottom: 1px solid var(--line); }
+.tabs button { border: none; border-bottom: 3px solid transparent; border-radius: 0; background: transparent; font-weight: 700; color: var(--muted); }
+.tabs button[aria-selected="true"] { color: var(--ink); border-bottom-color: var(--ink); }
+
+.banner { margin: 10px 16px 0; padding: 10px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 14px; }
+.banner.error { background: var(--danger-soft); color: var(--danger); }
+
+.panes { flex: 1; min-height: 0; display: grid; grid-template-columns: minmax(0, 1fr) minmax(360px, 480px); }
+.pane { min-height: 0; overflow-y: auto; padding-block: 12px 32px; padding-inline: 16px; }
+.pane + .pane { border-left: 1px solid var(--line); background: var(--surface); }
+@media (max-width: 960px) {
+  .tabs { display: flex; }
+  .panes { display: block; overflow: visible; }
+  .pane { overflow: visible; }
+  .pane + .pane { border-left: none; background: transparent; }
+  .pane[data-active="false"] { display: none; }
+}
+
+/* Anotações */
+.toolbar {
+  position: sticky; top: env(safe-area-inset-top, 0px); z-index: 2;
+  display: flex; flex-wrap: wrap; gap: 6px 10px; align-items: center;
+  background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius);
+  padding: 6px 8px; box-shadow: var(--shadow); margin-bottom: 10px;
+}
+.group { display: flex; gap: 4px; align-items: center; }
+.tool { min-width: 40px; padding: 0 8px; display: inline-flex; align-items: center; justify-content: center; }
+.tool svg { width: 20px; height: 20px; }
+.tool[aria-pressed="true"] { background: var(--ink-soft); border-color: var(--ink); color: var(--ink); }
+.swatch { width: 28px; height: 28px; min-height: 28px; border-radius: 50%; padding: 0; border: 2px solid var(--surface); box-shadow: 0 0 0 1px var(--line); }
+.swatch[aria-pressed="true"] { box-shadow: 0 0 0 2px var(--ink); }
+.dot { display: block; border-radius: 50%; background: currentColor; }
+.pagebar { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; flex-wrap: wrap; }
+.pagebar .label { font-variant-numeric: tabular-nums; font-weight: 700; padding: 0 4px; }
+.sheet-wrap { display: flex; justify-content: center; }
+.sheet { position: relative; width: 100%; max-width: 860px; box-shadow: var(--shadow); border-radius: 4px; overflow: hidden; }
+.sheet canvas { display: block; width: 100%; height: auto; }
+.sheet canvas.live { position: absolute; inset: 0; height: 100%; cursor: crosshair; }
+
+/* Aulas */
+.section-head { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 12px; }
+.section-head h2 { font-size: 22px; }
+.lecture-list { display: grid; gap: 10px; }
+.lecture-item {
+  display: grid; gap: 4px; text-align: left; padding: 12px 14px; border-radius: var(--radius);
+  background: var(--surface); border: 1px solid var(--line);
+}
+.lecture-item strong { font-size: 17px; }
+.chips { display: flex; flex-wrap: wrap; gap: 6px; }
+.chip { font-size: 12px; font-weight: 700; padding: 2px 8px; border-radius: 999px; background: var(--surface-2); color: var(--muted); letter-spacing: .02em; }
+.chip.on { background: var(--ok-soft); color: var(--ok); }
+.chip.alta { background: var(--danger-soft); color: var(--danger); }
+.chip.media { background: var(--warn-soft); color: var(--warn); }
+.empty { padding: 20px; border: 2px dashed var(--line); border-radius: var(--radius); color: var(--muted); }
+.empty strong { color: var(--fg); }
+
+.detail { display: grid; gap: 18px; }
+.detail-head { display: flex; gap: 8px; align-items: center; }
+.title-input {
+  flex: 1; min-width: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
+  border: 1px solid transparent; border-radius: 8px; background: transparent; padding: 4px 6px;
+}
+.title-input:hover, .title-input:focus { border-color: var(--line); background: var(--surface); }
+.block { display: grid; gap: 8px; }
+.block > h3 { font-size: 17px; display: flex; align-items: baseline; gap: 8px; }
+.block > h3 .step { color: var(--ink); font-variant-numeric: tabular-nums; }
+.tip { font-size: 14px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
+.tip b { color: var(--fg); }
+textarea.transcript {
+  width: 100%; min-height: 180px; resize: vertical; padding: 10px 12px; border-radius: 10px;
+  border: 1px solid var(--line); background: var(--surface); line-height: 1.55;
+}
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.file-label { display: inline-flex; align-items: center; gap: 6px; }
+.file-label input { position: absolute; opacity: 0; width: 1px; height: 1px; }
+.thumbs { display: grid; grid-template-columns: repeat(auto-fill, minmax(84px, 1fr)); gap: 8px; }
+.thumbs figure { margin: 0; display: grid; gap: 2px; }
+.thumbs img, .thumb-ph { width: 100%; aspect-ratio: 4 / 3; object-fit: contain; background: var(--surface-2); border-radius: 6px; border: 1px solid var(--line); }
+.thumbs figcaption { font-size: 12px; color: var(--muted); text-align: center; font-variant-numeric: tabular-nums; }
+.progress { font-size: 14px; color: var(--ink); font-weight: 700; }
+.stream { font-size: 13px; color: var(--muted); max-height: 7.5em; overflow: hidden; white-space: pre-wrap; word-break: break-word; }
+
+.result { display: grid; gap: 14px; padding: 14px; border-radius: var(--radius); background: var(--surface); border: 1px solid var(--line); }
+.result h4 { font-family: var(--font-display); font-size: 16px; margin: 0 0 4px; color: var(--ink); }
+.result p { margin: 0; }
+.result ul, .result ol { margin: 0; padding-left: 20px; display: grid; gap: 4px; }
+.qa summary { cursor: pointer; font-weight: 700; }
+.qa p { margin: 4px 0 0 0; color: var(--muted); }
+.exam { border-left: 4px solid var(--danger); background: var(--danger-soft); padding: 10px 12px; border-radius: 0 10px 10px 0; }
+.exam h4 { color: var(--danger); }
+.slide-card { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 12px; padding: 12px; border-radius: var(--radius); border: 1px solid var(--line); background: var(--surface); }
+.slide-card img, .slide-card .thumb-ph { width: 110px; aspect-ratio: 4/3; object-fit: contain; border-radius: 6px; background: var(--surface-2); border: 1px solid var(--line); }
+.slide-card h4 { font-family: var(--font-display); font-size: 16px; margin: 0; }
+.slide-card .body { display: grid; gap: 6px; min-width: 0; }
+.slide-card .said { font-size: 14px; color: var(--muted); border-left: 3px solid var(--ink); padding-left: 8px; }
+@media (max-width: 480px) {
+  .slide-card { grid-template-columns: minmax(0, 1fr); }
+  .slide-card img, .slide-card .thumb-ph { width: 100%; }
+}
+
+dialog { border: none; border-radius: 16px; padding: 18px; width: min(420px, calc(100vw - 32px)); background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
+dialog::backdrop { background: rgba(10, 15, 25, .45); }
+dialog form { display: grid; gap: 12px; }
+dialog input[type="text"] { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg); }
+dialog .row { justify-content: flex-end; }
+.toast {
+  position: fixed; left: 50%; bottom: calc(16px + env(safe-area-inset-bottom, 0px)); transform: translateX(-50%);
+  background: var(--fg); color: var(--bg); padding: 10px 16px; border-radius: 999px; font-size: 14px; z-index: 10;
+  max-width: calc(100vw - 32px);
+}
+@media (prefers-reduced-motion: no-preference) {
+  .toast { animation: rise .2s ease-out; }
+  @keyframes rise { from { transform: translate(-50%, 8px); opacity: 0; } }
+}
+</style>
+
+<div class="app">
+  <header class="topbar">
+    <h1 class="brand">Caderno <span>de Estudos</span></h1>
+    <div class="notebook-picker">
+      <label class="sr-only" for="notebook-select">Matéria</label>
+      <select id="notebook-select"></select>
+      <button class="tool" id="notebook-new" title="Nova matéria" aria-label="Nova matéria">＋</button>
+      <button class="tool" id="notebook-rename" title="Renomear matéria" aria-label="Renomear matéria">✎</button>
+      <button class="tool danger-text" id="notebook-delete" title="Excluir matéria" aria-label="Excluir matéria">✕</button>
+    </div>
+  </header>
+  <nav class="tabs" role="tablist" aria-label="Seções">
+    <button role="tab" id="tab-notes" aria-selected="true" aria-controls="pane-notes">Anotações</button>
+    <button role="tab" id="tab-lectures" aria-selected="false" aria-controls="pane-lectures">Aulas e slides</button>
+  </nav>
+  <div id="banner" class="banner" hidden></div>
+
+  <div class="panes">
+    <section class="pane" id="pane-notes" data-active="true" role="tabpanel" aria-labelledby="tab-notes">
+      <div class="toolbar" role="toolbar" aria-label="Ferramentas de escrita">
+        <div class="group" id="tools"></div>
+        <div class="group" id="colors"></div>
+        <div class="group" id="widths"></div>
+        <div class="group">
+          <button class="tool" id="undo" aria-label="Desfazer" title="Desfazer">↶</button>
+          <button class="tool" id="redo" aria-label="Refazer" title="Refazer">↷</button>
+        </div>
+      </div>
+      <div class="pagebar">
+        <button class="tool" id="page-prev" aria-label="Página anterior">‹</button>
+        <span class="label" id="page-label">Página 1 de 1</span>
+        <button class="tool" id="page-next" aria-label="Próxima página">›</button>
+        <button id="page-add">＋ Página</button>
+        <button class="ghost danger-text small" id="page-clear">Limpar página</button>
+        <span class="muted small" id="save-state" aria-live="polite"></span>
+      </div>
+      <div class="sheet-wrap">
+        <div class="sheet" id="sheet">
+          <canvas id="base" aria-hidden="true"></canvas>
+          <canvas id="live" class="live" role="img" aria-label="Página do caderno para escrever"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <section class="pane" id="pane-lectures" data-active="false" role="tabpanel" aria-labelledby="tab-lectures">
+      <div id="lectures-view"></div>
+    </section>
+  </div>
+</div>
+
+<dialog id="dialog">
+  <form method="dialog" id="dialog-form">
+    <h3 id="dialog-title"></h3>
+    <p id="dialog-text" class="muted small" hidden></p>
+    <input type="text" id="dialog-input" maxlength="120" autocomplete="off">
+    <div class="row">
+      <button type="button" id="dialog-cancel">Cancelar</button>
+      <button type="submit" class="primary" id="dialog-ok">OK</button>
+    </div>
+  </form>
+</dialog>
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js"></script>
+<script>
+'use strict';
+
+/* ---------- Constantes ---------- */
+const PAGE_W = 1000;
+const PAGE_H = Math.round(PAGE_W * Math.SQRT2);
+const MAX_PAGE_BYTES = 230000;          // documentos do banco aceitam até 256 KiB
+const MAX_TRANSCRIPT = 150000;          // caracteres enviados à Claude
+const MAX_SLIDE_TEXT = 1800;
+const SLIDES_PER_CALL = 6;
+const COLORS = [
+  { c: '#1d3fc4', n: 'Azul caneta' }, { c: '#1b1f2a', n: 'Preto' }, { c: '#c62828', n: 'Vermelho' },
+  { c: '#1b8a4c', n: 'Verde' }, { c: '#7b3fd1', n: 'Roxo' },
+];
+const MARKER_COLORS = { '#1d3fc4': '#7fb2ff', '#1b1f2a': '#ffe15a', '#c62828': '#ff9db0', '#1b8a4c': '#9be7a6', '#7b3fd1': '#d4b5ff' };
+const WIDTHS = [2, 4, 7];
+const ICONS = {
+  pen: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20l4-1 11-11-3-3L5 16l-1 4z"/><path d="M14 6l3 3"/></svg>',
+  marker: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 15l-3 3h5l1-1"/><path d="M9 15l7-11 4 3-7 11z"/><path d="M4 21h16" opacity=".5"/></svg>',
+  eraser: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M7 20h12"/><path d="M5 15l9-10 6 6-8 9H8z"/></svg>',
+  hand: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 13V5a1.5 1.5 0 013 0v6"/><path d="M11 11V4a1.5 1.5 0 013 0v7"/><path d="M14 11V6a1.5 1.5 0 013 0v7c0 4-2.5 7-6 7-2.5 0-4-1.5-5.5-4L4 12.5a1.5 1.5 0 012.5-1.5L8 13"/></svg>',
+};
+const TOOLS = [
+  { id: 'pen', label: 'Caneta' }, { id: 'marker', label: 'Marca-texto' },
+  { id: 'eraser', label: 'Borracha' }, { id: 'hand', label: 'Rolar a página' },
+];
+
+/* ---------- Utilidades ---------- */
+const $ = (id) => document.getElementById(id);
+const uid = () => (crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).slice(2));
+function el(tag, attrs = {}, ...children) {
+  const node = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (v == null || v === false) continue;
+    if (k === 'class') node.className = v;
+    else if (k.startsWith('on')) node.addEventListener(k.slice(2), v);
+    else if (k === 'text') node.textContent = v;
+    else node.setAttribute(k, v === true ? '' : v);
+  }
+  for (const child of children.flat()) {
+    if (child == null || child === false) continue;
+    node.append(child instanceof Node ? child : String(child));
+  }
+  return node;
+}
+const fmtDate = (t) => new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(t);
+const str = (v) => (typeof v === 'string' ? v.trim() : '');
+const arr = (v) => (Array.isArray(v) ? v : []);
+
+let toastTimer = 0;
+function toast(message) {
+  const t = $('toast');
+  t.textContent = message;
+  t.hidden = false;
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => { t.hidden = true; }, 3500);
+}
+function banner(message, isError = false) {
+  const b = $('banner');
+  b.textContent = message || '';
+  b.hidden = !message;
+  b.classList.toggle('error', isError);
+}
+
+/* Caixa de diálogo própria (o visualizador não exibe prompt/confirm). */
+function ask({ title, text = '', value = '', input = true, ok = 'OK', danger = false }) {
+  return new Promise((resolve) => {
+    const dialog = $('dialog');
+    $('dialog-title').textContent = title;
+    $('dialog-text').textContent = text;
+    $('dialog-text').hidden = !text;
+    const field = $('dialog-input');
+    field.hidden = !input;
+    field.value = value;
+    const okBtn = $('dialog-ok');
+    okBtn.textContent = ok;
+    okBtn.classList.toggle('primary', !danger);
+    okBtn.classList.toggle('danger-text', danger);
+    const finish = (result) => {
+      dialog.removeEventListener('close', onClose);
+      $('dialog-form').removeEventListener('submit', onSubmit);
+      $('dialog-cancel').removeEventListener('click', onCancel);
+      if (dialog.open) dialog.close();
+      resolve(result);
+    };
+    const onSubmit = (e) => { e.preventDefault(); finish(input ? field.value.trim() || null : true); };
+    const onCancel = () => finish(input ? null : false);
+    const onClose = () => finish(input ? null : false);
+    $('dialog-form').addEventListener('submit', onSubmit);
+    $('dialog-cancel').addEventListener('click', onCancel);
+    dialog.addEventListener('close', onClose);
+    dialog.showModal();
+    if (input) { field.focus(); field.select(); }
+  });
+}
+
+/* ---------- Armazenamento (db por pessoa, com modo temporário) ---------- */
+const store = {
+  db: null, base: null, assets: null, sample: null,
+  notebooks: new Map(), pages: new Map(), lectures: new Map(),
+  unsub: { notebooks: null, pages: null, lectures: null },
+  writing: new Map(),   // caminho -> {busy, next}
+};
+
+function collectionRef(name) { return store.base ? store.base.collection(name) : null; }
+
+/* Uma escrita por documento por vez; rajadas viram uma só escrita com o último estado. */
+async function saveDoc(name, id, data) {
+  const coll = collectionRef(name);
+  if (!coll) return;
+  const key = name + '/' + id;
+  const slot = store.writing.get(key) || { busy: false, next: null };
+  store.writing.set(key, slot);
+  slot.next = data;
+  if (slot.busy) return;
+  slot.busy = true;
+  updateSaveState();
+  try {
+    while (slot.next) {
+      const body = slot.next;
+      slot.next = null;
+      try {
+        await coll.doc(id).set(body);
+      } catch (e) {
+        if (e && e.code === 'unavailable') {
+          await new Promise((r) => setTimeout(r, 800 + Math.random() * 800));
+          if (!slot.next) slot.next = body;
+          continue;
+        }
+        reportDbError(e);
+        break;
+      }
+    }
+  } finally {
+    slot.busy = false;
+    store.writing.delete(key);
+    updateSaveState();
+  }
+}
+async function deleteDoc(name, id) {
+  const coll = collectionRef(name);
+  if (!coll) return;
+  try { await coll.doc(id).delete(); } catch (e) { reportDbError(e); }
+}
+function reportDbError(e) {
+  const code = e && e.code;
+  if (code === 'quota_exceeded') banner('O espaço de armazenamento acabou. Exclua aulas ou matérias antigas para continuar salvando.', true);
+  else if (code === 'invalid_argument') banner('Não foi possível salvar: este conteúdo ficou grande demais. Comece uma nova página.', true);
+  else if (code === 'revoked') banner('O acesso a este caderno foi encerrado. Recarregue a página.', true);
+  else banner('Não foi possível salvar agora. Suas alterações continuam na tela; tente de novo em instantes.', true);
+}
+function updateSaveState() {
+  const s = $('save-state');
+  if (!store.base) { s.textContent = ''; return; }
+  s.textContent = store.writing.size > 0 ? 'Salvando…' : 'Salvo';
+}
+
+/* ---------- Estado da interface ---------- */
+const ui = {
+  notebookId: null, pageId: null, lectureId: null,
+  tool: 'pen', color: COLORS[0].c, width: 4, penSeen: false,
+  history: { past: [], present: [], future: [] },
+  lastSavedJSON: '', saveTimer: 0,
+  tab: 'notes',
+  busy: new Map(),       // lectureId -> {kind, ctl, text}
+  slideCache: new Map(), // lectureId -> {blobs: Blob[], urls: string[]}
+};
+
+function sortedNotebooks() { return [...store.notebooks.values()].sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0)); }
+function pagesOf(nb) { return [...store.pages.values()].filter((p) => p.notebookId === nb).sort((a, b) => a.index - b.index); }
+function lecturesOf(nb) { return [...store.lectures.values()].filter((l) => l.notebookId === nb).sort((a, b) => b.createdAt - a.createdAt); }
+
+/* ---------- Matérias (cadernos) ---------- */
+function renderNotebookSelect() {
+  const select = $('notebook-select');
+  select.replaceChildren(...sortedNotebooks().map((n) => el('option', { value: n.id, text: n.title })));
+  if (ui.notebookId) select.value = ui.notebookId;
+  $('notebook-delete').disabled = store.notebooks.size <= 1;
+}
+
+function createNotebookLocal(title) {
+  const now = Date.now();
+  const nb = { id: uid(), title, createdAt: now, updatedAt: now };
+  store.notebooks.set(nb.id, nb);
+  saveDoc('notebooks', nb.id, stripId(nb));
+  const page = { id: uid(), notebookId: nb.id, index: 0, strokes: [], updatedAt: now };
+  store.pages.set(page.id, page);
+  saveDoc('pages', page.id, stripId(page));
+  return nb;
+}
+function stripId(o) { const { id, ...rest } = o; return rest; }
+function touchNotebook(id) {
+  const nb = store.notebooks.get(id);
+  if (!nb) return;
+  nb.updatedAt = Date.now();
+  saveDoc('notebooks', id, stripId(nb));
+}
+
+function selectNotebook(id) {
+  if (!store.notebooks.has(id)) return;
+  flushPageSave();
+  ui.notebookId = id;
+  ui.lectureId = null;
+  try { localStorage.setItem('caderno.notebook', id); } catch { /* sem armazenamento local */ }
+  renderNotebookSelect();
+  const pages = pagesOf(id);
+  openPage(pages[0] ? pages[0].id : null);
+  renderLectures();
+}
+
+$('notebook-select').addEventListener('change', (e) => selectNotebook(e.target.value));
+$('notebook-new').addEventListener('click', async () => {
+  const title = await ask({ title: 'Nova matéria', value: '', ok: 'Criar' });
+  if (!title) return;
+  const nb = createNotebookLocal(title);
+  selectNotebook(nb.id);
+  toast(`Matéria "${title}" criada`);
+});
+$('notebook-rename').addEventListener('click', async () => {
+  const nb = store.notebooks.get(ui.notebookId);
+  if (!nb) return;
+  const title = await ask({ title: 'Renomear matéria', value: nb.title, ok: 'Salvar' });
+  if (!title || title === nb.title) return;
+  nb.title = title;
+  nb.updatedAt = Date.now();
+  saveDoc('notebooks', nb.id, stripId(nb));
+  renderNotebookSelect();
+});
+$('notebook-delete').addEventListener('click', async () => {
+  const nb = store.notebooks.get(ui.notebookId);
+  if (!nb || store.notebooks.size <= 1) return;
+  const ok = await ask({ title: `Excluir "${nb.title}"?`, text: 'As páginas, aulas e análises desta matéria serão apagadas.', input: false, ok: 'Excluir', danger: true });
+  if (!ok) return;
+  for (const p of pagesOf(nb.id)) { store.pages.delete(p.id); deleteDoc('pages', p.id); }
+  for (const l of lecturesOf(nb.id)) { store.lectures.delete(l.id); deleteDoc('lectures', l.id); }
+  store.notebooks.delete(nb.id);
+  deleteDoc('notebooks', nb.id);
+  selectNotebook(sortedNotebooks()[0].id);
+  toast('Matéria excluída');
+});
+
+/* ---------- Abas (celular) ---------- */
+function setTab(tab) {
+  ui.tab = tab;
+  $('tab-notes').setAttribute('aria-selected', String(tab === 'notes'));
+  $('tab-lectures').setAttribute('aria-selected', String(tab === 'lectures'));
+  $('pane-notes').dataset.active = String(tab === 'notes');
+  $('pane-lectures').dataset.active = String(tab === 'lectures');
+  if (tab === 'notes') requestAnimationFrame(renderBase);
+}
+$('tab-notes').addEventListener('click', () => setTab('notes'));
+$('tab-lectures').addEventListener('click', () => setTab('lectures'));
+
+/* ---------- Ferramentas ---------- */
+function renderToolbar() {
+  $('tools').replaceChildren(...TOOLS.map((t) => {
+    const b = el('button', { class: 'tool', 'aria-pressed': String(ui.tool === t.id), title: t.label, 'aria-label': t.label, onclick: () => { ui.tool = t.id; renderToolbar(); } });
+    b.innerHTML = ICONS[t.id];
+    return b;
+  }));
+  const colorOff = ui.tool === 'eraser' || ui.tool === 'hand';
+  $('colors').replaceChildren(...COLORS.map((c) => el('button', {
+    class: 'swatch', style: `background:${c.c}`, title: c.n, 'aria-label': c.n,
+    'aria-pressed': String(ui.color === c.c), disabled: colorOff,
+    onclick: () => { ui.color = c.c; renderToolbar(); },
+  })));
+  $('widths').replaceChildren(...WIDTHS.map((w) => el('button', {
+    class: 'tool', 'aria-label': `Espessura ${w}`, title: `Espessura ${w}`, 'aria-pressed': String(ui.width === w), disabled: colorOff,
+    onclick: () => { ui.width = w; renderToolbar(); },
+  }, el('span', { class: 'dot', style: `width:${w + 4}px;height:${w + 4}px` }))));
+  $('undo').disabled = ui.history.past.length === 0;
+  $('redo').disabled = ui.history.future.length === 0;
+  updateTouchAction();
+}
+
+/* ---------- Desenho ---------- */
+// Traço: {t:'pen'|'marker', c:cor, w:largura, p:[x,y,pressão(0-9), ...]}
+const baseCanvas = $('base');
+const liveCanvas = $('live');
+let drawing = null;   // {pointerId, stroke} ou {pointerId, erasing: strokes[]}
+
+function sizeCanvas(canvas) {
+  const rect = $('sheet').getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const w = Math.max(1, Math.round(rect.width * dpr));
+  const h = Math.round(w * PAGE_H / PAGE_W);
+  if (canvas.width !== w || canvas.height !== h) { canvas.width = w; canvas.height = h; }
+  const ctx = canvas.getContext('2d');
+  ctx.setTransform(w / PAGE_W, 0, 0, w / PAGE_W, 0, 0);
+  return ctx;
+}
+function drawPaper(ctx) {
+  ctx.fillStyle = '#fffdf7';
+  ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+  ctx.strokeStyle = '#d7e1f0';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  for (let y = 80; y < PAGE_H; y += 40) { ctx.moveTo(0, y); ctx.lineTo(PAGE_W, y); }
+  ctx.stroke();
+  ctx.strokeStyle = '#efb9b9';
+  ctx.beginPath(); ctx.moveTo(90, 0); ctx.lineTo(90, PAGE_H); ctx.stroke();
+}
+const pw = (w, p) => w * (0.5 + p / 9);
+function drawStroke(ctx, s) {
+  const p = s.p;
+  const n = p.length / 3;
+  if (n === 0) return;
+  ctx.save();
+  ctx.lineCap = 'round'; ctx.lineJoin = 'round';
+  ctx.strokeStyle = s.c; ctx.fillStyle = s.c;
+  if (s.t === 'marker') ctx.globalAlpha = 0.4;
+  if (n === 1) {
+    ctx.beginPath();
+    ctx.arc(p[0], p[1], (s.t === 'pen' ? pw(s.w, p[2]) : s.w) / 2, 0, Math.PI * 2);
+    ctx.fill();
+  } else if (s.t === 'marker') {
+    ctx.lineWidth = s.w;
+    ctx.beginPath();
+    ctx.moveTo(p[0], p[1]);
+    for (let i = 3; i < p.length; i += 3) ctx.lineTo(p[i], p[i + 1]);
+    ctx.stroke();
+  } else {
+    let mx = p[0], my = p[1];
+    for (let i = 3; i < p.length; i += 3) {
+      const px = p[i - 3], py = p[i - 2], x = p[i], y = p[i + 1];
+      const nx = (px + x) / 2, ny = (py + y) / 2;
+      ctx.lineWidth = pw(s.w, p[i - 1]);
+      ctx.beginPath(); ctx.moveTo(mx, my); ctx.quadraticCurveTo(px, py, nx, ny); ctx.stroke();
+      mx = nx; my = ny;
+    }
+    const last = p.length - 3;
+    ctx.lineWidth = pw(s.w, p[last + 2]);
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(p[last], p[last + 1]); ctx.stroke();
+  }
+  ctx.restore();
+}
+function renderBase() {
+  if (!$('sheet').getBoundingClientRect().width) return;
+  const ctx = sizeCanvas(baseCanvas);
+  drawPaper(ctx);
+  const list = drawing && drawing.erasing ? drawing.erasing : ui.history.present;
+  for (const s of list) drawStroke(ctx, s);
+  clearLive();
+}
+function clearLive() {
+  const ctx = sizeCanvas(liveCanvas);
+  ctx.clearRect(0, 0, PAGE_W, PAGE_H);
+  return ctx;
+}
+new ResizeObserver(() => renderBase()).observe($('sheet'));
+
+function segDist(px, py, ax, ay, bx, by) {
+  const dx = bx - ax, dy = by - ay, l = dx * dx + dy * dy;
+  const t = l === 0 ? 0 : Math.max(0, Math.min(1, ((px - ax) * dx + (py - ay) * dy) / l));
+  return Math.hypot(px - (ax + t * dx), py - (ay + t * dy));
+}
+function hits(s, x, y, r) {
+  const p = s.p, lim = r + s.w / 2;
+  if (p.length === 3) return Math.hypot(x - p[0], y - p[1]) <= lim;
+  for (let i = 3; i < p.length; i += 3) if (segDist(x, y, p[i - 3], p[i - 2], p[i], p[i + 1]) <= lim) return true;
+  return false;
+}
+function eraseAt(list, x, y) {
+  const next = list.filter((s) => !hits(s, x, y, 14));
+  return next.length === list.length ? list : next;
+}
+function toPage(e) {
+  const r = liveCanvas.getBoundingClientRect();
+  const k = PAGE_W / r.width;
+  const pressure = e.pointerType === 'pen' && e.pressure > 0 ? Math.min(1, e.pressure) : 0.5;
+  return [Math.round((e.clientX - r.left) * k), Math.round((e.clientY - r.top) * k), Math.round(pressure * 9)];
+}
+function updateTouchAction() {
+  // Com caneta detectada, o dedo rola a página (rejeição de palma). A ferramenta "mão" também rola.
+  liveCanvas.style.touchAction = ui.tool === 'hand' || ui.penSeen ? 'pan-x pan-y pinch-zoom' : 'none';
+  liveCanvas.style.cursor = ui.tool === 'hand' ? 'grab' : 'crosshair';
+}
+function ignoreEvent(e) {
+  if (!ui.pageId || ui.tool === 'hand' || !e.isPrimary) return true;
+  if (e.pointerType === 'mouse' && e.button !== 0) return true;
+  return ui.penSeen && e.pointerType === 'touch';
+}
+
+liveCanvas.addEventListener('pointerdown', (e) => {
+  if (e.pointerType === 'pen' && !ui.penSeen) { ui.penSeen = true; updateTouchAction(); }
+  if (drawing || ignoreEvent(e)) return;
+  e.preventDefault();
+  liveCanvas.setPointerCapture(e.pointerId);
+  const [x, y, pr] = toPage(e);
+  if (ui.tool === 'eraser') {
+    drawing = { pointerId: e.pointerId, erasing: eraseAt(ui.history.present, x, y) };
+    renderBase();
+    return;
+  }
+  const marker = ui.tool === 'marker';
+  drawing = {
+    pointerId: e.pointerId,
+    stroke: { t: marker ? 'marker' : 'pen', c: marker ? MARKER_COLORS[ui.color] : ui.color, w: marker ? ui.width * 5 : ui.width, p: [x, y, pr] },
+  };
+  drawStroke(clearLive(), drawing.stroke);
+});
+liveCanvas.addEventListener('pointermove', (e) => {
+  if (!drawing || e.pointerId !== drawing.pointerId) return;
+  e.preventDefault();
+  const events = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
+  const list = events.length ? events : [e];
+  if (drawing.erasing) {
+    let next = drawing.erasing;
+    for (const ev of list) { const [x, y] = toPage(ev); next = eraseAt(next, x, y); }
+    if (next !== drawing.erasing) { drawing.erasing = next; renderBase(); }
+    return;
+  }
+  const p = drawing.stroke.p;
+  for (const ev of list) {
+    const [x, y, pr] = toPage(ev);
+    const lx = p[p.length - 3], ly = p[p.length - 2];
+    if (Math.hypot(x - lx, y - ly) < 2) continue;   // simplifica o traço para ocupar menos espaço
+    p.push(x, y, pr);
+  }
+  drawStroke(clearLive(), drawing.stroke);
+});
+function endPointer(e) {
+  if (!drawing || e.pointerId !== drawing.pointerId) return;
+  if (liveCanvas.hasPointerCapture(e.pointerId)) liveCanvas.releasePointerCapture(e.pointerId);
+  const d = drawing;
+  drawing = null;
+  if (d.erasing) {
+    if (d.erasing !== ui.history.present) commitStrokes(d.erasing);
+    else renderBase();
+    return;
+  }
+  commitStrokes([...ui.history.present, d.stroke]);
+}
+liveCanvas.addEventListener('pointerup', endPointer);
+liveCanvas.addEventListener('pointercancel', endPointer);
+liveCanvas.addEventListener('contextmenu', (e) => e.preventDefault());
+
+function commitStrokes(next) {
+  const bytes = JSON.stringify(next).length;
+  if (bytes > MAX_PAGE_BYTES && next.length > ui.history.present.length) {
+    renderBase();
+    toast('Esta página está cheia. Toque em "＋ Página" para continuar.');
+    return;
+  }
+  const h = ui.history;
+  h.past.push(h.present);
+  if (h.past.length > 80) h.past.shift();
+  h.present = next;
+  h.future = [];
+  afterHistoryChange();
+}
+function afterHistoryChange() {
+  renderBase();
+  renderToolbar();
+  schedulePageSave();
+}
+$('undo').addEventListener('click', undo);
+$('redo').addEventListener('click', redo);
+function undo() {
+  const h = ui.history;
+  if (!h.past.length) return;
+  h.future.unshift(h.present);
+  h.present = h.past.pop();
+  afterHistoryChange();
+}
+function redo() {
+  const h = ui.history;
+  if (!h.future.length) return;
+  h.past.push(h.present);
+  h.present = h.future.shift();
+  afterHistoryChange();
+}
+window.addEventListener('keydown', (e) => {
+  const tag = e.target && e.target.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA') return;
+  if (!(e.ctrlKey || e.metaKey)) return;
+  const k = e.key.toLowerCase();
+  if (k === 'z' && !e.shiftKey) { e.preventDefault(); undo(); }
+  else if ((k === 'z' && e.shiftKey) || k === 'y') { e.preventDefault(); redo(); }
+});
+$('page-clear').addEventListener('click', async () => {
+  if (!ui.history.present.length) return;
+  const ok = await ask({ title: 'Limpar esta página?', text: 'Você ainda pode desfazer logo em seguida.', input: false, ok: 'Limpar', danger: true });
+  if (ok) commitStrokes([]);
+});
+
+/* ---------- Páginas ---------- */
+function openPage(pageId) {
+  flushPageSave();
+  ui.pageId = pageId;
+  const page = pageId ? store.pages.get(pageId) : null;
+  ui.history = { past: [], present: page ? page.strokes : [], future: [] };
+  ui.lastSavedJSON = JSON.stringify(ui.history.present);
+  renderPagebar();
+  renderToolbar();
+  renderBase();
+}
+function renderPagebar() {
+  const pages = pagesOf(ui.notebookId);
+  const i = pages.findIndex((p) => p.id === ui.pageId);
+  $('page-label').textContent = pages.length ? `Página ${i + 1} de ${pages.length}` : 'Sem páginas';
+  $('page-prev').disabled = i <= 0;
+  $('page-next').disabled = i < 0 || i >= pages.length - 1;
+}
+$('page-prev').addEventListener('click', () => {
+  const pages = pagesOf(ui.notebookId);
+  const i = pages.findIndex((p) => p.id === ui.pageId);
+  if (i > 0) openPage(pages[i - 1].id);
+});
+$('page-next').addEventListener('click', () => {
+  const pages = pagesOf(ui.notebookId);
+  const i = pages.findIndex((p) => p.id === ui.pageId);
+  if (i >= 0 && i < pages.length - 1) openPage(pages[i + 1].id);
+});
+$('page-add').addEventListener('click', () => {
+  if (!ui.notebookId) return;
+  const pages = pagesOf(ui.notebookId);
+  const page = { id: uid(), notebookId: ui.notebookId, index: pages.length ? pages[pages.length - 1].index + 1 : 0, strokes: [], updatedAt: Date.now() };
+  store.pages.set(page.id, page);
+  saveDoc('pages', page.id, stripId(page));
+  touchNotebook(ui.notebookId);
+  openPage(page.id);
+});
+function schedulePageSave() {
+  clearTimeout(ui.saveTimer);
+  ui.saveTimer = setTimeout(flushPageSave, 700);
+  if (store.base) $('save-state').textContent = 'Salvando…';
+}
+function flushPageSave() {
+  clearTimeout(ui.saveTimer);
+  ui.saveTimer = 0;
+  const page = ui.pageId && store.pages.get(ui.pageId);
+  if (!page) return;
+  const json = JSON.stringify(ui.history.present);
+  if (json === ui.lastSavedJSON) { updateSaveState(); return; }
+  ui.lastSavedJSON = json;
+  page.strokes = ui.history.present;
+  page.updatedAt = Date.now();
+  saveDoc('pages', page.id, stripId(page));
+  touchNotebook(page.notebookId);
+}
+window.addEventListener('pagehide', flushPageSave);
+document.addEventListener('visibilitychange', () => { if (document.hidden) flushPageSave(); });
+
+/* ---------- Aulas ---------- */
+function newLecture() {
+  const now = Date.now();
+  const count = lecturesOf(ui.notebookId).length + 1;
+  const lecture = {
+    id: uid(), notebookId: ui.notebookId, title: `Aula ${count}`, createdAt: now, updatedAt: now,
+    transcript: '', summary: null, slides: null, slideAnalysis: null,
+  };
+  store.lectures.set(lecture.id, lecture);
+  saveLecture(lecture);
+  touchNotebook(ui.notebookId);
+  ui.lectureId = lecture.id;
+  renderLectures();
+}
+function saveLecture(lecture) {
+  lecture.updatedAt = Date.now();
+  saveDoc('lectures', lecture.id, stripId(lecture));
+}
+
+function renderLectures() {
+  const view = $('lectures-view');
+  const lecture = ui.lectureId && store.lectures.get(ui.lectureId);
+  if (lecture && lecture.notebookId === ui.notebookId) { renderLectureDetail(view, lecture); return; }
+  ui.lectureId = null;
+  const list = lecturesOf(ui.notebookId);
+  view.replaceChildren(
+    el('div', { class: 'section-head' },
+      el('h2', { text: 'Aulas' }),
+      el('button', { class: 'primary', onclick: newLecture, disabled: !ui.notebookId }, '＋ Nova aula')),
+    list.length
+      ? el('div', { class: 'lecture-list' }, list.map((l) => el('button', {
+          class: 'lecture-item', onclick: () => { ui.lectureId = l.id; renderLectures(); },
+        },
+          el('strong', { text: l.title }),
+          el('span', { class: 'muted small', text: fmtDate(l.createdAt) }),
+          el('span', { class: 'chips' },
+            el('span', { class: 'chip' + (l.transcript ? ' on' : ''), text: l.transcript ? 'Transcrição' : 'Sem transcrição' }),
+            el('span', { class: 'chip' + (l.summary ? ' on' : ''), text: l.summary ? 'Resumo pronto' : 'Sem resumo' }),
+            el('span', { class: 'chip' + (l.slideAnalysis ? ' on' : ''), text: l.slides ? `${l.slides.pages.length} slides` : 'Sem slides' }),
+          ))))
+      : el('div', { class: 'empty' },
+          el('strong', { text: 'Nenhuma aula nesta matéria ainda.' }),
+          el('p', { text: 'Crie uma aula para colar ou ditar o que o professor falou, enviar os slides e receber um resumo com o que pode cair na prova.' })),
+  );
+}
+
+let transcriptTimer = 0;
+function renderLectureDetail(view, lecture) {
+  const busy = ui.busy.get(lecture.id);
+  const words = lecture.transcript ? lecture.transcript.trim().split(/\s+/).length : 0;
+
+  const title = el('input', { class: 'title-input', id: 'lecture-title', value: lecture.title, 'aria-label': 'Nome da aula', maxlength: '120' });
+  title.addEventListener('change', () => {
+    const v = title.value.trim();
+    if (v && v !== lecture.title) { lecture.title = v; saveLecture(lecture); }
+    else title.value = lecture.title;
+  });
+
+  const transcript = el('textarea', {
+    class: 'transcript', id: 'lecture-transcript',
+    placeholder: 'Cole aqui a transcrição da aula ou toque no microfone do teclado e dite.',
+  });
+  transcript.value = lecture.transcript;
+  const counter = el('span', { class: 'muted small', text: `${words} palavras` });
+  transcript.addEventListener('input', () => {
+    lecture.transcript = transcript.value;
+    lecture.updatedAt = Date.now();
+    const n = transcript.value.trim() ? transcript.value.trim().split(/\s+/).length : 0;
+    counter.textContent = `${n} palavras`;
+    clearTimeout(transcriptTimer);
+    transcriptTimer = setTimeout(() => { saveLecture(lecture); refreshActions(); }, 900);
+  });
+
+  const fileInput = el('input', { type: 'file', accept: 'application/pdf,image/*', multiple: true, id: 'slides-input' });
+  fileInput.addEventListener('change', () => { const files = [...fileInput.files]; fileInput.value = ''; if (files.length) importSlides(lecture, files); });
+
+  const thumbs = el('div', { class: 'thumbs', id: 'slide-thumbs' });
+  if (lecture.slides) fillThumbs(lecture, thumbs);
+
+  const summarizeBtn = el('button', { class: 'primary', id: 'btn-summary', onclick: () => summarizeLecture(lecture) }, lecture.summary ? 'Refazer resumo da aula' : 'Resumir aula');
+  const slidesBtn = el('button', { class: 'primary', id: 'btn-slides', onclick: () => analyzeSlides(lecture) }, lecture.slideAnalysis ? 'Refazer análise dos slides' : 'Analisar slides para a prova');
+  const stopBtn = el('button', { id: 'btn-stop', onclick: () => { const b = ui.busy.get(lecture.id); if (b) b.ctl.abort(); } }, 'Parar');
+  const progress = el('div', { class: 'progress', id: 'busy-progress', 'aria-live': 'polite' });
+  const stream = el('div', { class: 'stream', id: 'busy-stream' });
+
+  function refreshActions() {
+    const b = ui.busy.get(lecture.id);
+    const has = !!lecture.transcript.trim();
+    summarizeBtn.disabled = !!b || !has || !store.sample;
+    slidesBtn.disabled = !!b || !lecture.slides || !store.sample;
+    stopBtn.hidden = !b;
+    progress.textContent = b ? b.label : '';
+    stream.textContent = b ? b.text.slice(-400) : '';
+  }
+
+  view.replaceChildren(el('div', { class: 'detail' },
+    el('div', { class: 'detail-head' },
+      el('button', { class: 'tool', 'aria-label': 'Voltar para as aulas', onclick: () => { ui.lectureId = null; renderLectures(); } }, '‹'),
+      title,
+      el('button', { class: 'tool danger-text', 'aria-label': 'Excluir aula', title: 'Excluir aula', onclick: () => removeLecture(lecture) }, '✕')),
+
+    el('section', { class: 'block' },
+      el('h3', {}, el('span', { class: 'step', text: '1' }), 'O que o professor falou'),
+      el('div', { class: 'tip' },
+        el('b', { text: 'Dica: ' }),
+        'grave a aula no app de gravador do celular (Gravador do iPhone e da Samsung já transcrevem) e cole o texto aqui. ',
+        'Ou toque no ', el('b', { text: 'microfone do teclado' }), ' para ditar direto nesta caixa.'),
+      transcript,
+      el('div', { class: 'row' }, counter)),
+
+    el('section', { class: 'block' },
+      el('h3', {}, el('span', { class: 'step', text: '2' }), 'Slides da aula'),
+      el('div', { class: 'row' },
+        el('label', { class: 'file-label', for: 'slides-input' },
+          el('span', { class: 'primary', style: 'display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid var(--ink);cursor:pointer', role: 'button', tabindex: '0',
+            onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } } },
+            lecture.slides ? 'Trocar slides' : 'Enviar PDF ou fotos'),
+          fileInput),
+        lecture.slides ? el('span', { class: 'muted small', text: `${lecture.slides.name} · ${lecture.slides.pages.length} slides` }) : el('span', { class: 'muted small', text: 'PDF da aula ou fotos dos slides' })),
+      thumbs),
+
+    el('section', { class: 'block' },
+      el('h3', {}, el('span', { class: 'step', text: '3' }), 'Estudar com a Claude'),
+      !store.sample ? el('p', { class: 'muted small', text: 'Os resumos usam a sua conta Claude e só funcionam com a página aberta no claude.ai, com login.' }) : null,
+      el('div', { class: 'row' }, summarizeBtn, slidesBtn, stopBtn),
+      progress, stream),
+
+    renderSlideAnalysis(lecture),
+    renderSummary(lecture),
+  ));
+  view.refreshActions = refreshActions;
+  refreshActions();
+}
+function refreshDetailIfOpen(lectureId) {
+  if (ui.lectureId !== lectureId) return;
+  const view = $('lectures-view');
+  if (view.refreshActions) view.refreshActions();
+}
+
+async function removeLecture(lecture) {
+  const ok = await ask({ title: `Excluir "${lecture.title}"?`, text: 'A transcrição, os slides e as análises desta aula serão apagados.', input: false, ok: 'Excluir', danger: true });
+  if (!ok) return;
+  const b = ui.busy.get(lecture.id);
+  if (b) b.ctl.abort();
+  await deleteLectureAssets(lecture);
+  store.lectures.delete(lecture.id);
+  deleteDoc('lectures', lecture.id);
+  dropSlideCache(lecture.id);
+  ui.lectureId = null;
+  renderLectures();
+  toast('Aula excluída');
+}
+
+/* ---------- Slides ---------- */
+function dropSlideCache(id) {
+  const c = ui.slideCache.get(id);
+  if (c) c.urls.forEach((u) => u && URL.revokeObjectURL(u));
+  ui.slideCache.delete(id);
+}
+async function deleteLectureAssets(lecture) {
+  if (!store.assets || !lecture.slides) return;
+  const ids = [lecture.slides.pdfAssetId, ...(lecture.slides.imageAssetIds || [])].filter(Boolean);
+  for (const id of ids) { try { await store.assets.delete(id); } catch { /* já removido */ } }
+}
+function canvasToBlob(canvas, quality = 0.82) {
+  return new Promise((resolve, reject) => canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('imagem'))), 'image/jpeg', quality));
+}
+async function imageToJpeg(file, maxSide = 1600) {
+  const bitmap = await createImageBitmap(file);
+  const k = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const c = document.createElement('canvas');
+  c.width = Math.round(bitmap.width * k); c.height = Math.round(bitmap.height * k);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  ctx.drawImage(bitmap, 0, 0, c.width, c.height);
+  bitmap.close && bitmap.close();
+  return canvasToBlob(c);
+}
+function pdfReady() { return typeof window.pdfjsLib !== 'undefined'; }
+async function openPdf(data) {
+  const lib = window.pdfjsLib;
+  lib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+  return lib.getDocument({ data, isEvalSupported: false }).promise;
+}
+async function renderPdfPage(pdf, n, width = 1200) {
+  const page = await pdf.getPage(n);
+  const v1 = page.getViewport({ scale: 1 });
+  const viewport = page.getViewport({ scale: width / v1.width });
+  const c = document.createElement('canvas');
+  c.width = Math.round(viewport.width); c.height = Math.round(viewport.height);
+  const ctx = c.getContext('2d');
+  ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, c.width, c.height);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+  const text = await page.getTextContent();
+  const plain = text.items.map((i) => i.str).join(' ').replace(/\s+/g, ' ').trim().slice(0, MAX_SLIDE_TEXT);
+  page.cleanup();
+  return { blob: await canvasToBlob(c), text: plain };
+}
+
+async function importSlides(lecture, files) {
+  if (ui.busy.get(lecture.id)) return;
+  const pdfFile = files.find((f) => f.type === 'application/pdf' || /\.pdf$/i.test(f.name));
+  const images = files.filter((f) => f.type.startsWith('image/'));
+  if (!pdfFile && !images.length) { toast('Envie um PDF ou fotos dos slides.'); return; }
+  if (pdfFile && !pdfReady()) { toast('O leitor de PDF não carregou. Envie fotos dos slides.'); return; }
+
+  const ctl = new AbortController();
+  const busy = { kind: 'import', ctl, label: 'Lendo os slides…', text: '' };
+  ui.busy.set(lecture.id, busy);
+  refreshDetailIfOpen(lecture.id);
+  try {
+    const blobs = [];
+    const pages = [];
+    let slides;
+    if (pdfFile) {
+      const pdf = await openPdf(await pdfFile.arrayBuffer());
+      const total = Math.min(pdf.numPages, 120);
+      for (let n = 1; n <= total; n++) {
+        if (ctl.signal.aborted) throw new DOMException('cancelado', 'AbortError');
+        busy.label = `Lendo slide ${n} de ${total}…`;
+        refreshDetailIfOpen(lecture.id);
+        const r = await renderPdfPage(pdf, n);
+        blobs.push(r.blob);
+        pages.push({ n, text: r.text });
+      }
+      pdf.destroy();
+      slides = { kind: 'pdf', name: pdfFile.name, pages, pdfAssetId: null, imageAssetIds: null };
+      if (pdf.numPages > total) toast(`Só os primeiros ${total} slides foram lidos.`);
+    } else {
+      for (let i = 0; i < images.length; i++) {
+        busy.label = `Preparando foto ${i + 1} de ${images.length}…`;
+        refreshDetailIfOpen(lecture.id);
+        blobs.push(await imageToJpeg(images[i]));
+        pages.push({ n: i + 1, text: '' });
+      }
+      slides = { kind: 'images', name: images.length === 1 ? images[0].name : `${images.length} fotos`, pages, pdfAssetId: null, imageAssetIds: null };
+    }
+
+    // Guarda os arquivos para que os slides apareçam de novo ao reabrir a aula.
+    if (store.assets) {
+      busy.label = 'Salvando os slides…';
+      refreshDetailIfOpen(lecture.id);
+      const uploaded = [];
+      try {
+        if (pdfFile && pdfFile.size <= 20 * 1024 * 1024) {
+          slides.pdfAssetId = (await store.assets.upload(pdfFile)).id;
+        } else if (!pdfFile) {
+          for (const b of blobs) uploaded.push((await store.assets.upload(b)).id);
+          slides.imageAssetIds = uploaded;
+        }
+      } catch (e) {
+        for (const id of uploaded) { try { await store.assets.delete(id); } catch { /* ignora */ } }
+        slides.imageAssetIds = null;
+        toast(e && e.code === 'too_large' ? 'O PDF é grande demais para guardar; a análise funciona mesmo assim.' : 'Os slides não puderam ser guardados; a análise funciona mesmo assim.');
+      }
+    }
+
+    await deleteLectureAssets(lecture);
+    dropSlideCache(lecture.id);
+    ui.slideCache.set(lecture.id, { blobs, urls: blobs.map((b) => URL.createObjectURL(b)) });
+    lecture.slides = slides;
+    lecture.slideAnalysis = null;
+    saveLecture(lecture);
+    toast(`${pages.length} slides prontos para analisar`);
+  } catch (e) {
+    if (!(e && e.name === 'AbortError')) toast('Não foi possível ler esse arquivo. Tente outro PDF ou fotos.');
+  } finally {
+    ui.busy.delete(lecture.id);
+    if (ui.lectureId === lecture.id) renderLectures();
+  }
+}
+
+/* Recupera as imagens dos slides (da memória ou dos arquivos guardados). */
+async function loadSlideImages(lecture) {
+  const cached = ui.slideCache.get(lecture.id);
+  if (cached) return cached;
+  const s = lecture.slides;
+  if (!s) return null;
+  try {
+    let blobs = [];
+    if (s.kind === 'pdf' && s.pdfAssetId && pdfReady()) {
+      const res = await fetch('/_blob/' + s.pdfAssetId);
+      if (!res.ok) return null;
+      const pdf = await openPdf(await res.arrayBuffer());
+      for (let n = 1; n <= Math.min(pdf.numPages, s.pages.length); n++) blobs.push((await renderPdfPage(pdf, n)).blob);
+      pdf.destroy();
+    } else if (s.imageAssetIds) {
+      for (const id of s.imageAssetIds) {
+        const res = await fetch('/_blob/' + id);
+        if (!res.ok) return null;
+        blobs.push(await res.blob());
+      }
+    } else return null;
+    const entry = { blobs, urls: blobs.map((b) => URL.createObjectURL(b)) };
+    ui.slideCache.set(lecture.id, entry);
+    return entry;
+  } catch {
+    return null;
+  }
+}
+const thumbLoading = new Set();
+function fillThumbs(lecture, container) {
+  const cached = ui.slideCache.get(lecture.id);
+  const pages = lecture.slides.pages;
+  container.replaceChildren(...pages.map((p, i) => el('figure', {},
+    cached && cached.urls[i] ? el('img', { src: cached.urls[i], alt: `Slide ${p.n}`, loading: 'lazy' }) : el('div', { class: 'thumb-ph', 'aria-hidden': 'true' }),
+    el('figcaption', { text: `Slide ${p.n}` }))));
+  if (!cached && !thumbLoading.has(lecture.id)) {
+    thumbLoading.add(lecture.id);
+    loadSlideImages(lecture).finally(() => {
+      thumbLoading.delete(lecture.id);
+      if (ui.slideCache.get(lecture.id) && ui.lectureId === lecture.id && !ui.busy.get(lecture.id)) renderLectures();
+    });
+  }
+}
+
+/* ---------- Claude ---------- */
+const ERRORS = {
+  not_granted: 'Você não autorizou o uso da Claude nesta página. Recarregue e permita para gerar resumos.',
+  rate_limited: 'Muitos pedidos seguidos. Espere um pouco e tente de novo.',
+  prompt_too_large: 'O conteúdo é grande demais para um pedido só. Divida a aula em partes menores.',
+  refused: 'A Claude não pôde responder a este conteúdo.',
+  session_expired: 'Sua sessão expirou. Entre de novo no claude.ai e recarregue a página.',
+  sampling_disabled: 'O uso da Claude por páginas está desligado na sua conta.',
+  invalid_json: 'A resposta veio incompleta. Tente de novo.',
+  images_unavailable: 'Este aparelho não consegue enviar imagens; vou usar só o texto dos slides.',
+};
+const errorText = (e) => (e && ERRORS[e.code]) || 'Não foi possível falar com a Claude agora. Tente de novo em instantes.';
+
+function trimmedTranscript(t) {
+  const clean = (t || '').trim();
+  return clean.length > MAX_TRANSCRIPT ? clean.slice(0, MAX_TRANSCRIPT) + '\n[transcrição cortada por ser muito longa]' : clean;
+}
+
+const SUMMARY_PROMPT = `Você é um professor particular paciente que ajuda um estudante brasileiro a entender a aula.
+Abaixo está a transcrição de uma aula, possivelmente feita por reconhecimento de voz, com erros de palavras e sem pontuação. Deduza o sentido pelo contexto e não invente conteúdo que não esteja na aula.
+Escreva em português do Brasil, com frases curtas, linguagem simples e exemplos do dia a dia. Explique termos técnicos.
+
+Responda APENAS com um objeto JSON neste formato:
+{"resumo": "um parágrafo curto com a ideia central",
+ "topicos": [{"titulo": "...", "explicacao": "explicação didática"}],
+ "conceitos": [{"termo": "...", "explicacao": "explicação simples"}],
+ "exemplos": ["exemplo ou analogia que ajuda a fixar"],
+ "prova": ["o que o professor indicou que é importante ou pode cair na prova"],
+ "perguntas": [{"pergunta": "...", "resposta": "resposta curta"}],
+ "conferir": ["trechos confusos da transcrição que valem conferir"]}
+Use de 3 a 6 tópicos e de 3 a 5 perguntas. Listas sem conteúdo ficam vazias.`;
+
+async function runBusy(lecture, kind, label, work) {
+  if (ui.busy.get(lecture.id)) return;
+  const ctl = new AbortController();
+  const busy = { kind, ctl, label, text: '' };
+  ui.busy.set(lecture.id, busy);
+  refreshDetailIfOpen(lecture.id);
+  try {
+    await work(busy);
+  } catch (e) {
+    if (!(e && e.code === 'cancelled')) toast(errorText(e));
+  } finally {
+    ui.busy.delete(lecture.id);
+    if (ui.lectureId === lecture.id) renderLectures();
+  }
+}
+const onStream = (lecture, busy) => ({ text }) => { busy.text = text; refreshDetailIfOpen(lecture.id); };
+
+function summarizeLecture(lecture) {
+  if (!store.sample || !lecture.transcript.trim()) return;
+  runBusy(lecture, 'summary', 'A Claude está lendo a aula…', async (busy) => {
+    const input = `${SUMMARY_PROMPT}\n\nMatéria: ${store.notebooks.get(lecture.notebookId)?.title || ''}\nAula: ${lecture.title}\n\n<transcricao>\n${trimmedTranscript(lecture.transcript)}\n</transcricao>`;
+    const data = await store.sample.json(input, { signal: busy.ctl.signal, onText: onStream(lecture, busy), cache: false });
+    if (!data || typeof data !== 'object') throw { code: 'invalid_json' };
+    lecture.summary = {
+      resumo: str(data.resumo),
+      topicos: arr(data.topicos).map((t) => ({ titulo: str(t?.titulo), explicacao: str(t?.explicacao) })).filter((t) => t.titulo || t.explicacao),
+      conceitos: arr(data.conceitos).map((t) => ({ termo: str(t?.termo), explicacao: str(t?.explicacao) })).filter((t) => t.termo),
+      exemplos: arr(data.exemplos).map(str).filter(Boolean),
+      prova: arr(data.prova).map(str).filter(Boolean),
+      perguntas: arr(data.perguntas).map((q) => ({ pergunta: str(q?.pergunta), resposta: str(q?.resposta) })).filter((q) => q.pergunta),
+      conferir: arr(data.conferir).map(str).filter(Boolean),
+      at: Date.now(),
+    };
+    saveLecture(lecture);
+    toast('Resumo pronto');
+  });
+}
+
+function slideBatchPrompt(lecture, batch, withImages) {
+  const slidesText = batch.map((p) => `--- Slide ${p.n} ---\n${p.text || '(sem texto extraído' + (withImages ? '; veja a imagem deste slide)' : ')')}`).join('\n\n');
+  const transcript = trimmedTranscript(lecture.transcript);
+  return `Você ajuda um estudante brasileiro a estudar para a prova a partir dos slides de uma aula${transcript ? ' e da transcrição do que o professor falou em sala' : ''}.
+Matéria: ${store.notebooks.get(lecture.notebookId)?.title || ''}. Aula: ${lecture.title}.
+${withImages ? `As imagens anexadas são os slides ${batch[0].n} a ${batch[batch.length - 1].n}, nesta ordem. Leia também gráficos, fórmulas e figuras.\n` : ''}
+Para CADA slide abaixo, explique em português simples e diga o que tem mais chance de cair na prova.${transcript ? ' Relacione cada slide com o que o professor explicou na transcrição (a transcrição pode ter erros de reconhecimento de voz). Se o professor deu ênfase, exemplos ou disse que cai na prova, destaque isso.' : ''}
+Não invente conteúdo que não esteja nos slides${transcript ? ' ou na fala do professor' : ''}.
+
+Responda APENAS com um objeto JSON:
+{"slides": [{"numero": 1, "titulo": "título curto", "resumo": "2 a 4 frases simples",
+  "prova": ["ponto que pode cair na prova"],
+  "professor": "o que o professor explicou sobre este slide, ou string vazia se ele não falou dele",
+  "relevancia": "alta" | "media" | "baixa"}]}
+Inclua todos os slides de ${batch[0].n} a ${batch[batch.length - 1].n}, um item por slide.
+
+${slidesText}${transcript ? `\n\n<transcricao>\n${transcript}\n</transcricao>` : ''}`;
+}
+
+function analyzeSlides(lecture) {
+  if (!store.sample || !lecture.slides) return;
+  runBusy(lecture, 'slides', 'Preparando os slides…', async (busy) => {
+    const pages = lecture.slides.pages;
+    const limits = await store.sample.limits().catch(() => null);
+    const maxImages = limits && limits.images ? Math.max(1, limits.images.maxCount || 1) : 0;
+    const images = maxImages ? await loadSlideImages(lecture) : null;
+    const perCall = images ? Math.max(1, Math.min(SLIDES_PER_CALL, maxImages)) : 12;
+    const results = new Map();
+
+    for (let i = 0; i < pages.length; i += perCall) {
+      const batch = pages.slice(i, i + perCall);
+      busy.label = `Analisando slides ${batch[0].n} a ${batch[batch.length - 1].n} de ${pages.length}…`;
+      busy.text = '';
+      refreshDetailIfOpen(lecture.id);
+      const opts = { signal: busy.ctl.signal, onText: onStream(lecture, busy) };
+      let withImages = !!images;
+      if (withImages) opts.images = batch.map((p) => images.blobs[p.n - 1]).filter(Boolean);
+      if (withImages && !opts.images.length) { withImages = false; delete opts.images; }
+      let data;
+      try {
+        data = await store.sample.json(slideBatchPrompt(lecture, batch, withImages), opts);
+      } catch (e) {
+        if (withImages && (e.code === 'images_unavailable' || e.code === 'image_rejected')) {
+          delete opts.images;
+          data = await store.sample.json(slideBatchPrompt(lecture, batch, false), opts);
+        } else throw e;
+      }
+      for (const s of arr(data && data.slides)) {
+        const n = Number(s && s.numero);
+        if (!batch.some((p) => p.n === n)) continue;
+        const rel = ['alta', 'media', 'baixa'].includes(s.relevancia) ? s.relevancia : 'media';
+        results.set(n, { numero: n, titulo: str(s.titulo), resumo: str(s.resumo), prova: arr(s.prova).map(str).filter(Boolean), professor: str(s.professor), relevancia: rel });
+      }
+    }
+    const slides = pages.map((p) => results.get(p.n) || { numero: p.n, titulo: '', resumo: '', prova: [], professor: '', relevancia: 'baixa' });
+
+    busy.label = 'Juntando o que mais pode cair na prova…';
+    busy.text = '';
+    refreshDetailIfOpen(lecture.id);
+    const digest = slides.map((s) => `Slide ${s.numero} (${s.relevancia}) ${s.titulo}: ${s.prova.join('; ')}${s.professor ? ' | Professor: ' + s.professor : ''}`).join('\n').slice(0, 60000);
+    let top = [];
+    try {
+      const data = await store.sample.json(`A partir da análise dos slides de uma aula abaixo, escolha os pontos com mais chance de cair na prova (no máximo 8), priorizando o que o professor enfatizou em sala.
+Responda APENAS com JSON: {"top": [{"ponto": "frase curta e clara", "porque": "por que deve cair, em uma frase", "slides": [numeros]}]}
+
+${digest}`, { signal: busy.ctl.signal, onText: onStream(lecture, busy) });
+      top = arr(data && data.top).map((t) => ({ ponto: str(t?.ponto), porque: str(t?.porque), slides: arr(t?.slides).map(Number).filter(Number.isFinite) })).filter((t) => t.ponto);
+    } catch (e) {
+      if (e && e.code === 'cancelled') throw e;
+    }
+    lecture.slideAnalysis = { slides, top, at: Date.now() };
+    saveLecture(lecture);
+    toast('Análise dos slides pronta');
+  });
+}
+
+/* ---------- Resultados ---------- */
+function renderSummary(lecture) {
+  const s = lecture.summary;
+  if (!s) return null;
+  return el('section', { class: 'result', 'aria-label': 'Resumo da aula' },
+    el('h3', { text: 'Resumo da aula' }),
+    s.resumo ? el('p', { text: s.resumo }) : null,
+    s.prova.length ? el('div', { class: 'exam' }, el('h4', { text: 'Pode cair na prova' }), el('ul', {}, s.prova.map((t) => el('li', { text: t })))) : null,
+    s.topicos.length ? el('div', {}, el('h4', { text: 'Passo a passo' }), el('ol', {}, s.topicos.map((t) => el('li', {}, el('strong', { text: t.titulo }), t.explicacao ? ' ' + t.explicacao : '')))) : null,
+    s.conceitos.length ? el('div', {}, el('h4', { text: 'Conceitos-chave' }), el('ul', {}, s.conceitos.map((t) => el('li', {}, el('strong', { text: t.termo }), ': ' + t.explicacao)))) : null,
+    s.exemplos.length ? el('div', {}, el('h4', { text: 'Exemplos' }), el('ul', {}, s.exemplos.map((t) => el('li', { text: t })))) : null,
+    s.perguntas.length ? el('div', {}, el('h4', { text: 'Teste você mesmo' }), s.perguntas.map((q) => el('details', { class: 'qa' }, el('summary', { text: q.pergunta }), el('p', { text: q.resposta || '—' })))) : null,
+    s.conferir.length ? el('div', {}, el('h4', { text: 'Vale conferir' }), el('ul', {}, s.conferir.map((t) => el('li', { class: 'muted', text: t })))) : null,
+  );
+}
+const REL_LABEL = { alta: 'Alta chance na prova', media: 'Média chance', baixa: 'Baixa chance' };
+function renderSlideAnalysis(lecture) {
+  const a = lecture.slideAnalysis;
+  if (!a) return null;
+  const cached = ui.slideCache.get(lecture.id);
+  return el('section', { class: 'result', 'aria-label': 'Análise dos slides' },
+    el('h3', { text: 'Slides para a prova' }),
+    a.top.length ? el('div', { class: 'exam' },
+      el('h4', { text: 'O que mais pode cair' }),
+      el('ol', {}, a.top.map((t) => el('li', {}, el('strong', { text: t.ponto }), t.porque ? ' ' + t.porque : '',
+        t.slides.length ? el('span', { class: 'muted small', text: ` (slide${t.slides.length > 1 ? 's' : ''} ${t.slides.join(', ')})` }) : null)))) : null,
+    a.slides.map((s) => el('article', { class: 'slide-card' },
+      cached && cached.urls[s.numero - 1] ? el('img', { src: cached.urls[s.numero - 1], alt: `Slide ${s.numero}`, loading: 'lazy' }) : el('div', { class: 'thumb-ph', 'aria-hidden': 'true' }),
+      el('div', { class: 'body' },
+        el('div', { class: 'chips' }, el('span', { class: 'chip', text: `Slide ${s.numero}` }), el('span', { class: 'chip ' + s.relevancia, text: REL_LABEL[s.relevancia] })),
+        el('h4', { text: s.titulo || `Slide ${s.numero}` }),
+        s.resumo ? el('p', { text: s.resumo }) : el('p', { class: 'muted small', text: 'Sem análise para este slide.' }),
+        s.prova.length ? el('ul', {}, s.prova.map((t) => el('li', { text: t }))) : null,
+        s.professor ? el('p', { class: 'said' }, el('strong', { text: 'Em sala: ' }), s.professor) : null))),
+  );
+}
+
+/* ---------- Sincronização com o banco ---------- */
+function applySnapshot(map, snap, onChange) {
+  let changed = false;
+  for (const ch of snap.docChanges()) {
+    const id = ch.doc.id;
+    if (ch.type === 'removed') { changed = map.delete(id) || changed; continue; }
+    const incoming = { id, ...structuredCloneSafe(ch.doc.data()) };
+    // Ignora o eco de escritas próprias ainda na fila e versões mais antigas que a da tela.
+    const name = map === store.pages ? 'pages' : map === store.lectures ? 'lectures' : 'notebooks';
+    if (store.writing.has(name + '/' + id)) continue;
+    const current = map.get(id);
+    if (current) {
+      if ((incoming.updatedAt || 0) < (current.updatedAt || 0)) continue;
+      // Atualiza o mesmo objeto para que telas abertas continuem apontando para ele.
+      for (const k of Object.keys(current)) if (!(k in incoming)) delete current[k];
+      Object.assign(current, incoming);
+    } else {
+      map.set(id, incoming);
+    }
+    changed = true;
+    if (onChange) onChange(id, incoming);
+  }
+  return changed;
+}
+function structuredCloneSafe(v) { try { return structuredClone(v); } catch { return JSON.parse(JSON.stringify(v)); } }
+
+async function connect() {
+  const timeout = (p) => Promise.race([p, new Promise((r) => setTimeout(() => r(null), 12000))]);
+  const claude = window.claude;
+  if (!claude || typeof claude.use !== 'function') return false;
+  const [db, user, assets, sample] = await Promise.all(['db', 'user', 'assets', 'sample'].map((n) => timeout(claude.use(n)).catch(() => null)));
+  store.sample = sample;
+  store.assets = assets;
+  const id = user ? await user.id().catch(() => null) : null;
+  if (!db || !id) return false;
+  store.db = db;
+  store.base = db.doc(`data/users/${id}/profile`);
+
+  const first = (coll) => coll.get();
+  const [nbs, pages, lectures] = await Promise.all([first(store.base.collection('notebooks')), first(store.base.collection('pages')), first(store.base.collection('lectures'))]);
+  for (const d of nbs.docs) store.notebooks.set(d.id, { id: d.id, ...structuredCloneSafe(d.data()) });
+  for (const d of pages.docs) store.pages.set(d.id, { id: d.id, ...structuredCloneSafe(d.data()) });
+  for (const d of lectures.docs) store.lectures.set(d.id, { id: d.id, ...structuredCloneSafe(d.data()) });
+
+  const onError = (e) => { if (e && e.code === 'revoked') reportDbError(e); };
+  store.unsub.notebooks = store.base.collection('notebooks').onSnapshot((snap) => {
+    if (applySnapshot(store.notebooks, snap)) {
+      if (!store.notebooks.has(ui.notebookId) && store.notebooks.size) selectNotebook(sortedNotebooks()[0].id);
+      else renderNotebookSelect();
+    }
+  }, onError);
+  store.unsub.pages = store.base.collection('pages').onSnapshot((snap) => {
+    let reopen = false;
+    applySnapshot(store.pages, snap, (pid, page) => {
+      // Só recarrega a página aberta quando ela mudou em outro aparelho.
+      if (pid === ui.pageId && !ui.saveTimer && !drawing && JSON.stringify(page.strokes || []) !== ui.lastSavedJSON) reopen = true;
+    });
+    if (reopen) openPage(ui.pageId); else renderPagebar();
+  }, onError);
+  store.unsub.lectures = store.base.collection('lectures').onSnapshot((snap) => {
+    if (applySnapshot(store.lectures, snap) && !(document.activeElement && document.activeElement.id && document.activeElement.id.startsWith('lecture-'))) renderLectures();
+  }, onError);
+  return true;
+}
+
+async function start() {
+  renderToolbar();
+  let connected = false;
+  try { connected = await connect(); } catch { connected = false; }
+  if (!connected) banner('Modo temporário: abra este link no claude.ai com sua conta para salvar o caderno e usar os resumos.');
+  if (store.notebooks.size === 0) createNotebookLocal('Minha primeira matéria');
+  let preferred = null;
+  try { preferred = localStorage.getItem('caderno.notebook'); } catch { /* sem armazenamento local */ }
+  selectNotebook(store.notebooks.has(preferred) ? preferred : sortedNotebooks()[0].id);
+  // Matérias sem página (ex.: criadas em outro aparelho no meio de uma sincronização) ganham uma.
+  if (!pagesOf(ui.notebookId).length) $('page-add').click();
+  updateSaveState();
+}
+
+// Primeira pintura: página em branco enquanto o caderno carrega.
+renderToolbar();
+renderNotebookSelect();
+requestAnimationFrame(renderBase);
+renderLectures();
+start();
+</script>
