@@ -946,6 +946,8 @@ function uploadButton(input, label, primary) {
     input);
 }
 
+const GRAVADOR_URL = 'https://alexandremaia22.github.io/Notas/';
+
 let transcriptTimer = 0;
 function renderLectureDetail(view, lecture) {
   const busy = ui.busy.get(lecture.id);
@@ -1021,10 +1023,17 @@ function renderLectureDetail(view, lecture) {
 
     el('section', { class: 'block' },
       el('h3', {}, el('span', { class: 'step', text: '1' }), 'O que o professor falou'),
+      el('div', { class: 'row' },
+        el('a', {
+          class: 'primary', href: GRAVADOR_URL, target: '_blank', rel: 'noopener',
+          style: 'display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid var(--ink);text-decoration:none',
+        }, '🎙️ Gravar aula'),
+        el('span', { class: 'muted small', text: 'Abre o gravador: ele transcreve ao vivo e tem o botão “Copiar transcrição”.' })),
       el('div', { class: 'tip' },
-        el('b', { text: 'Dica: ' }),
-        'grave a aula no app de gravador do celular (Gravador do iPhone e da Samsung já transcrevem) e cole o texto aqui. ',
-        'Ou toque no ', el('b', { text: 'microfone do teclado' }), ' para ditar direto nesta caixa.'),
+        el('b', { text: 'Como funciona: ' }),
+        'o claude.ai não deixa esta página usar o microfone, por isso a gravação acontece no gravador. ',
+        'Ao terminar, copie a transcrição, volte aqui e cole na caixa abaixo. ',
+        'Também dá para tocar no ', el('b', { text: 'microfone do teclado' }), ' e ditar direto nesta caixa.'),
       transcript,
       el('div', { class: 'row' }, counter),
       el('div', { class: 'row' },
