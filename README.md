@@ -4,13 +4,15 @@ Caderno digital no estilo Notability/GoodNotes, com um assistente que **grava a 
 
 ## Versão para celular (link do Claude)
 
+Abra: [Caderno de Estudos](https://claude.ai/artifact/25MM126DRhEd7bDoT1g1Fm)
+
 `artifact/caderno-de-estudos.html` é uma versão que roda como página do claude.ai: abre no celular sem instalar nada e usa a sua conta Claude para os resumos (sem chave de API). Ela também analisa os **slides** da aula (PDF ou fotos), slide por slide, com o que pode cair na prova e o que o professor explicou em sala. Lá o microfone não está disponível, então a transcrição é colada (ex.: do gravador do celular) ou ditada pelo teclado.
 
 No Caderno também dá para escrever por cima dos slides, criar flashcards com revisão espaçada, tirar dúvidas com a Claude e anexar o áudio do gravador.
 
 ## Gravador (GitHub Pages)
 
-O app completo (pasta `src/`) é publicado em `https://alexandremaia22.github.io/Notas/` pelo workflow `.github/workflows/pages.yml`. No celular ele grava a aula, transcreve ao vivo, mantém a tela acesa durante a gravação e copia a transcrição para colar no Caderno de Estudos.
+O app completo (pasta `src/`) é publicado em [alexandremaia22.github.io/Notas](https://alexandremaia22.github.io/Notas/) pelo workflow `.github/workflows/pages.yml`. No celular ele grava a aula, transcreve ao vivo, mantém a tela acesa durante a gravação e copia a transcrição para colar no Caderno de Estudos.
 
 ## O que já funciona (MVP)
 
