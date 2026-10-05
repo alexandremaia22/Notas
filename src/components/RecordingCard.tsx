@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { summarizeTranscript } from '../lib/api'
+import { copyText } from '../lib/clipboard'
+import { CADERNO_URL } from '../lib/links'
 import { formatDate, formatDuration } from '../lib/format'
 import type { Recording } from '../lib/types'
 import { Markdown } from './Markdown'
@@ -16,6 +18,7 @@ export function RecordingCard({ recording, aiConfigured, onUpdate, onDelete }: R
   const [showTranscript, setShowTranscript] = useState(false)
   const [streamingSummary, setStreamingSummary] = useState<string | null>(null)
   const [summaryError, setSummaryError] = useState<string | null>(null)
+  const [copied, setCopied] = useState<boolean | null>(null)
   const abortRef = useRef<AbortController | null>(null)
 
   // O áudio fica no IndexedDB como Blob; a URL temporária é liberada quando o player sai da tela.
@@ -79,6 +82,10 @@ export function RecordingCard({ recording, aiConfigured, onUpdate, onDelete }: R
     }
   }
 
+  const copyTranscript = async () => {
+    setCopied(await copyText(transcriptDraft))
+  }
+
   const rename = async () => {
     const title = window.prompt('Nome da aula', recording.title)?.trim()
     if (title && title !== recording.title) await onUpdate(recording.id, { title })
@@ -120,17 +127,41 @@ export function RecordingCard({ recording, aiConfigured, onUpdate, onDelete }: R
       )}
 
       <div className="summary-actions">
+        {aiConfigured && (
+          <button
+            type="button"
+            className="primary"
+            onClick={() => void generateSummary()}
+            disabled={!hasTranscript || isSummarizing}
+          >
+            {isSummarizing ? 'Resumindo…' : recording.summary ? 'Gerar novo resumo' : '✨ Resumir aula'}
+          </button>
+        )}
         <button
           type="button"
-          className="primary"
-          onClick={() => void generateSummary()}
-          disabled={!aiConfigured || !hasTranscript || isSummarizing}
-          title={!aiConfigured ? 'Configure a chave da API no servidor' : undefined}
+          className={aiConfigured ? undefined : 'primary'}
+          onClick={() => void copyTranscript()}
+          disabled={!hasTranscript}
         >
-          {isSummarizing ? 'Resumindo…' : recording.summary ? 'Gerar novo resumo' : '✨ Resumir aula'}
+          📋 Copiar transcrição
         </button>
-        {!hasTranscript && <span className="muted small-text">Adicione a transcrição para resumir.</span>}
+        {!aiConfigured && (
+          <a className="link-button" href={CADERNO_URL} target="_blank" rel="noreferrer">
+            Abrir o Caderno de Estudos ↗
+          </a>
+        )}
+        {!hasTranscript && <span className="muted small-text">Sem transcrição ainda.</span>}
       </div>
+      {copied === true && (
+        <p className="muted small-text" role="status">
+          Transcrição copiada. Cole na aula do Caderno de Estudos para resumir e analisar os slides.
+        </p>
+      )}
+      {copied === false && (
+        <p className="error" role="alert">
+          Não foi possível copiar. Abra a transcrição, selecione o texto e copie manualmente.
+        </p>
+      )}
 
       {summaryError && (
         <p className="error" role="alert">

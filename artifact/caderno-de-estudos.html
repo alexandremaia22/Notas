@@ -134,14 +134,14 @@ button:disabled { opacity: .45; cursor: not-allowed; }
 .empty { padding: 20px; border: 2px dashed var(--line); border-radius: var(--radius); color: var(--muted); }
 .empty strong { color: var(--fg); }
 
-.detail { display: grid; gap: 18px; }
+.detail { display: grid; gap: 18px; grid-template-columns: minmax(0, 1fr); }
 .detail-head { display: flex; gap: 8px; align-items: center; }
 .title-input {
   flex: 1; min-width: 0; font-family: var(--font-display); font-size: 22px; font-weight: 800;
   border: 1px solid transparent; border-radius: 8px; background: transparent; padding: 4px 6px;
 }
 .title-input:hover, .title-input:focus { border-color: var(--line); background: var(--surface); }
-.block { display: grid; gap: 8px; }
+.block { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); min-width: 0; }
 .block > h3 { font-size: 17px; display: flex; align-items: baseline; gap: 8px; }
 .block > h3 .step { color: var(--ink); font-variant-numeric: tabular-nums; }
 .tip { font-size: 14px; color: var(--muted); background: var(--surface-2); border-radius: 10px; padding: 10px 12px; }
@@ -178,6 +178,26 @@ textarea.transcript {
   .slide-card img, .slide-card .thumb-ph { width: 100%; }
 }
 
+.thumbs button.thumb { display: grid; gap: 2px; padding: 0; border: none; background: transparent; min-height: 0; }
+.thumbs button.thumb:hover:not(:disabled) { background: transparent; }
+.thumbs button.thumb:hover img { outline: 2px solid var(--ink); }
+.audio-player { width: 100%; }
+.cards-bar { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.due { font-weight: 700; color: var(--ink); font-variant-numeric: tabular-nums; }
+.chat { display: grid; gap: 8px; grid-template-columns: minmax(0, 1fr); }
+.msg { padding: 10px 12px; border-radius: 12px; max-width: 92%; white-space: pre-wrap; word-break: break-word; font-size: 15px; }
+.msg.user { justify-self: end; background: var(--ink); color: var(--surface); border-bottom-right-radius: 4px; }
+.msg.assistant { justify-self: start; background: var(--surface-2); border-bottom-left-radius: 4px; }
+.chat-form { display: flex; gap: 8px; }
+.chat-form textarea { flex: 1; min-width: 0; min-height: 44px; max-height: 140px; resize: vertical; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--line); background: var(--surface); }
+.review-card { display: grid; gap: 14px; min-height: 220px; align-content: start; }
+.review-card .front { font-family: var(--font-display); font-size: 20px; font-weight: 600; }
+.review-card .back { padding: 12px; border-radius: 10px; background: var(--surface-2); }
+.review-meta { display: flex; justify-content: space-between; color: var(--muted); font-size: 13px; font-variant-numeric: tabular-nums; }
+.grade { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.grade .bad { color: var(--danger); }
+.grade .ok { color: var(--ok); }
+#review { width: min(520px, calc(100vw - 32px)); }
 dialog { border: none; border-radius: 16px; padding: 18px; width: min(420px, calc(100vw - 32px)); background: var(--surface); color: var(--fg); box-shadow: var(--shadow); }
 dialog::backdrop { background: rgba(10, 15, 25, .45); }
 dialog form { display: grid; gap: 12px; }
@@ -228,6 +248,7 @@ dialog .row { justify-content: flex-end; }
         <button class="tool" id="page-next" aria-label="Próxima página">›</button>
         <button id="page-add">＋ Página</button>
         <button class="ghost danger-text small" id="page-clear">Limpar página</button>
+        <button class="ghost danger-text small" id="page-delete">Excluir página</button>
         <span class="muted small" id="save-state" aria-live="polite"></span>
       </div>
       <div class="sheet-wrap">
@@ -254,6 +275,20 @@ dialog .row { justify-content: flex-end; }
       <button type="submit" class="primary" id="dialog-ok">OK</button>
     </div>
   </form>
+</dialog>
+<dialog id="review" aria-labelledby="review-title">
+  <div class="review-card">
+    <div class="review-meta"><span id="review-title">Revisão</span><span id="review-count"></span></div>
+    <div class="front" id="review-front"></div>
+    <div class="back" id="review-back" hidden></div>
+    <button class="primary" id="review-show">Mostrar resposta</button>
+    <div class="grade" id="review-grade" hidden>
+      <button class="bad" id="grade-0">Errei</button>
+      <button id="grade-1">Difícil</button>
+      <button class="ok" id="grade-2">Acertei</button>
+    </div>
+    <button class="ghost" id="review-close">Fechar</button>
+  </div>
 </dialog>
 <div id="toast" class="toast" role="status" hidden></div>
 
@@ -492,8 +527,16 @@ $('notebook-delete').addEventListener('click', async () => {
   if (!nb || store.notebooks.size <= 1) return;
   const ok = await ask({ title: `Excluir "${nb.title}"?`, text: 'As páginas, aulas e análises desta matéria serão apagadas.', input: false, ok: 'Excluir', danger: true });
   if (!ok) return;
-  for (const p of pagesOf(nb.id)) { store.pages.delete(p.id); deleteDoc('pages', p.id); }
-  for (const l of lecturesOf(nb.id)) { store.lectures.delete(l.id); deleteDoc('lectures', l.id); }
+  for (const p of pagesOf(nb.id)) {
+    store.pages.delete(p.id);
+    deleteDoc('pages', p.id);
+    if (p.bg && store.assets) store.assets.delete(p.bg.assetId).catch(() => {});
+  }
+  for (const l of lecturesOf(nb.id)) {
+    await deleteLectureAssets(l);
+    store.lectures.delete(l.id);
+    deleteDoc('lectures', l.id);
+  }
   store.notebooks.delete(nb.id);
   deleteDoc('notebooks', nb.id);
   selectNotebook(sortedNotebooks()[0].id);
@@ -550,9 +593,10 @@ function sizeCanvas(canvas) {
   ctx.setTransform(w / PAGE_W, 0, 0, w / PAGE_W, 0, 0);
   return ctx;
 }
-function drawPaper(ctx) {
-  ctx.fillStyle = '#fffdf7';
+function drawPaper(ctx, lined = true) {
+  ctx.fillStyle = lined ? '#fffdf7' : '#ffffff';
   ctx.fillRect(0, 0, PAGE_W, PAGE_H);
+  if (!lined) return;
   ctx.strokeStyle = '#d7e1f0';
   ctx.lineWidth = 1.2;
   ctx.beginPath();
@@ -598,10 +642,29 @@ function drawStroke(ctx, s) {
 function renderBase() {
   if (!$('sheet').getBoundingClientRect().width) return;
   const ctx = sizeCanvas(baseCanvas);
-  drawPaper(ctx);
+  const page = ui.pageId && store.pages.get(ui.pageId);
+  const bg = page && page.bg;
+  drawPaper(ctx, !bg);
+  if (bg) {
+    const img = bgImage(bg.assetId);
+    if (img.complete && img.naturalWidth) ctx.drawImage(img, 0, 0, PAGE_W, PAGE_W * img.naturalHeight / img.naturalWidth);
+  }
   const list = drawing && drawing.erasing ? drawing.erasing : ui.history.present;
   for (const s of list) drawStroke(ctx, s);
   clearLive();
+}
+/* Imagens de fundo (slides) das páginas, carregadas uma vez por arquivo. */
+const bgImages = new Map();
+function bgImage(assetId) {
+  let img = bgImages.get(assetId);
+  if (!img) {
+    img = new Image();
+    img.onload = () => { const p = store.pages.get(ui.pageId); if (p && p.bg && p.bg.assetId === assetId) renderBase(); };
+    img.onerror = () => toast('Não foi possível carregar o slide desta página.');
+    img.src = '/_blob/' + assetId;
+    bgImages.set(assetId, img);
+  }
+  return img;
 }
 function clearLive() {
   const ctx = sizeCanvas(liveCanvas);
@@ -746,6 +809,23 @@ $('page-clear').addEventListener('click', async () => {
 });
 
 /* ---------- Páginas ---------- */
+$('page-delete').addEventListener('click', async () => {
+  const pages = pagesOf(ui.notebookId);
+  const page = store.pages.get(ui.pageId);
+  if (!page) return;
+  const ok = await ask({ title: 'Excluir esta página?', text: 'As anotações desta página serão apagadas.', input: false, ok: 'Excluir', danger: true });
+  if (!ok) return;
+  const i = pages.findIndex((p) => p.id === page.id);
+  clearTimeout(ui.saveTimer);
+  ui.saveTimer = 0;
+  store.pages.delete(page.id);
+  deleteDoc('pages', page.id);
+  if (page.bg && store.assets) store.assets.delete(page.bg.assetId).catch(() => {});
+  const rest = pagesOf(ui.notebookId);
+  if (rest.length) openPage(rest[Math.min(i, rest.length - 1)].id);
+  else { ui.pageId = null; $('page-add').click(); }
+  toast('Página excluída');
+});
 function openPage(pageId) {
   flushPageSave();
   ui.pageId = pageId;
@@ -759,8 +839,10 @@ function openPage(pageId) {
 function renderPagebar() {
   const pages = pagesOf(ui.notebookId);
   const i = pages.findIndex((p) => p.id === ui.pageId);
-  $('page-label').textContent = pages.length ? `Página ${i + 1} de ${pages.length}` : 'Sem páginas';
+  const current = pages[i];
+  $('page-label').textContent = pages.length ? `Página ${i + 1} de ${pages.length}${current && current.label ? ' · ' + current.label : ''}` : 'Sem páginas';
   $('page-prev').disabled = i <= 0;
+  $('page-delete').hidden = pages.length === 0;
   $('page-next').disabled = i < 0 || i >= pages.length - 1;
 }
 $('page-prev').addEventListener('click', () => {
@@ -831,7 +913,9 @@ function renderLectures() {
   view.replaceChildren(
     el('div', { class: 'section-head' },
       el('h2', { text: 'Aulas' }),
-      el('button', { class: 'primary', onclick: newLecture, disabled: !ui.notebookId }, '＋ Nova aula')),
+      el('div', { class: 'row' },
+        dueCount(ui.notebookId) ? el('button', { onclick: () => startReview(ui.notebookId, null) }, `Revisar hoje (${dueCount(ui.notebookId)})`) : null,
+        el('button', { class: 'primary', onclick: newLecture, disabled: !ui.notebookId }, '＋ Nova aula'))),
     list.length
       ? el('div', { class: 'lecture-list' }, list.map((l) => el('button', {
           class: 'lecture-item', onclick: () => { ui.lectureId = l.id; renderLectures(); },
@@ -842,11 +926,24 @@ function renderLectures() {
             el('span', { class: 'chip' + (l.transcript ? ' on' : ''), text: l.transcript ? 'Transcrição' : 'Sem transcrição' }),
             el('span', { class: 'chip' + (l.summary ? ' on' : ''), text: l.summary ? 'Resumo pronto' : 'Sem resumo' }),
             el('span', { class: 'chip' + (l.slideAnalysis ? ' on' : ''), text: l.slides ? `${l.slides.pages.length} slides` : 'Sem slides' }),
+            l.cards && l.cards.length ? el('span', { class: 'chip on', text: `${l.cards.length} flashcards` }) : null,
           ))))
       : el('div', { class: 'empty' },
           el('strong', { text: 'Nenhuma aula nesta matéria ainda.' }),
           el('p', { text: 'Crie uma aula para colar ou ditar o que o professor falou, enviar os slides e receber um resumo com o que pode cair na prova.' })),
   );
+}
+
+/* Botão que abre o seletor de arquivos (o input fica escondido dentro do rótulo). */
+function uploadButton(input, label, primary) {
+  return el('label', { class: 'file-label', for: input.id },
+    el('span', {
+      class: primary ? 'primary' : '',
+      style: 'display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid ' + (primary ? 'var(--ink)' : 'var(--line)') + ';cursor:pointer' + (primary ? '' : ';background:var(--surface)'),
+      role: 'button', tabindex: '0',
+      onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); input.click(); } },
+    }, label),
+    input);
 }
 
 let transcriptTimer = 0;
@@ -882,16 +979,34 @@ function renderLectureDetail(view, lecture) {
   const thumbs = el('div', { class: 'thumbs', id: 'slide-thumbs' });
   if (lecture.slides) fillThumbs(lecture, thumbs);
 
+  const audioInput = el('input', { type: 'file', accept: 'audio/*,video/mp4,video/webm,.m4a', id: 'audio-input' });
+  audioInput.addEventListener('change', () => { const f = audioInput.files[0]; audioInput.value = ''; if (f) attachAudio(lecture, f); });
+
+  const cards = lecture.cards || [];
+  const due = cards.filter((c) => c.due <= Date.now()).length;
+  const cardsBtn = el('button', { class: 'primary', id: 'btn-cards', onclick: () => makeCards(lecture) }, cards.length ? 'Criar novos flashcards' : 'Criar flashcards');
+  const reviewBtn = el('button', { id: 'btn-review', onclick: () => startReview(null, lecture.id), disabled: !cards.length }, due ? `Revisar agora (${due})` : 'Revisar');
+
   const summarizeBtn = el('button', { class: 'primary', id: 'btn-summary', onclick: () => summarizeLecture(lecture) }, lecture.summary ? 'Refazer resumo da aula' : 'Resumir aula');
   const slidesBtn = el('button', { class: 'primary', id: 'btn-slides', onclick: () => analyzeSlides(lecture) }, lecture.slideAnalysis ? 'Refazer análise dos slides' : 'Analisar slides para a prova');
   const stopBtn = el('button', { id: 'btn-stop', onclick: () => { const b = ui.busy.get(lecture.id); if (b) b.ctl.abort(); } }, 'Parar');
   const progress = el('div', { class: 'progress', id: 'busy-progress', 'aria-live': 'polite' });
   const stream = el('div', { class: 'stream', id: 'busy-stream' });
 
+  const chatLog = el('div', { class: 'chat', id: 'chat-log', 'aria-live': 'polite' },
+    (lecture.chat || []).map((m) => el('div', { class: 'msg ' + m.role, text: m.content })));
+  const chatField = el('textarea', { id: 'lecture-chat', rows: '1', placeholder: 'Ex.: não entendi a diferença entre média e mediana' });
+  const chatSend = el('button', { class: 'primary', type: 'submit' }, 'Perguntar');
+  const chatBox = el('div', { class: 'chat' }, chatLog,
+    el('form', { class: 'chat-form', onsubmit: (e) => { e.preventDefault(); askLecture(lecture, chatField); } }, chatField, chatSend),
+    (lecture.chat || []).length ? el('button', { class: 'ghost small', type: 'button', onclick: () => { lecture.chat = []; saveLecture(lecture); renderLectures(); } }, 'Limpar conversa') : null);
+
   function refreshActions() {
     const b = ui.busy.get(lecture.id);
     const has = !!lecture.transcript.trim();
     summarizeBtn.disabled = !!b || !has || !store.sample;
+    cardsBtn.disabled = !!b || !store.sample || !(has || lecture.summary || lecture.slideAnalysis);
+    chatSend.disabled = !!b || !store.sample;
     slidesBtn.disabled = !!b || !lecture.slides || !store.sample;
     stopBtn.hidden = !b;
     progress.textContent = b ? b.label : '';
@@ -911,17 +1026,20 @@ function renderLectureDetail(view, lecture) {
         'grave a aula no app de gravador do celular (Gravador do iPhone e da Samsung já transcrevem) e cole o texto aqui. ',
         'Ou toque no ', el('b', { text: 'microfone do teclado' }), ' para ditar direto nesta caixa.'),
       transcript,
-      el('div', { class: 'row' }, counter)),
+      el('div', { class: 'row' }, counter),
+      el('div', { class: 'row' },
+        uploadButton(audioInput, lecture.audio ? 'Trocar áudio da aula' : 'Anexar áudio do gravador', !lecture.audio),
+        el('span', { class: 'muted small', text: lecture.audio ? lecture.audio.name : 'Para ouvir a aula de novo (m4a ou webm, até 20 MB)' })),
+      lecture.audio ? el('audio', { class: 'audio-player', controls: true, preload: 'metadata', src: '/_blob/' + lecture.audio.assetId }) : null),
 
     el('section', { class: 'block' },
       el('h3', {}, el('span', { class: 'step', text: '2' }), 'Slides da aula'),
       el('div', { class: 'row' },
-        el('label', { class: 'file-label', for: 'slides-input' },
-          el('span', { class: 'primary', style: 'display:inline-flex;align-items:center;min-height:40px;padding:8px 14px;border-radius:10px;border:1px solid var(--ink);cursor:pointer', role: 'button', tabindex: '0',
-            onkeydown: (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); } } },
-            lecture.slides ? 'Trocar slides' : 'Enviar PDF ou fotos'),
-          fileInput),
+        uploadButton(fileInput, lecture.slides ? 'Trocar slides' : 'Enviar PDF ou fotos', !lecture.slides),
         lecture.slides ? el('span', { class: 'muted small', text: `${lecture.slides.name} · ${lecture.slides.pages.length} slides` }) : el('span', { class: 'muted small', text: 'PDF da aula ou fotos dos slides' })),
+      lecture.slides ? el('div', { class: 'row' },
+        el('button', { onclick: () => annotateSlides(lecture, lecture.slides.pages.map((_, i) => i)) }, '✎ Escrever em todos os slides'),
+        el('span', { class: 'muted small', text: 'ou toque em um slide para escrever nele' })) : null,
       thumbs),
 
     el('section', { class: 'block' },
@@ -929,6 +1047,15 @@ function renderLectureDetail(view, lecture) {
       !store.sample ? el('p', { class: 'muted small', text: 'Os resumos usam a sua conta Claude e só funcionam com a página aberta no claude.ai, com login.' }) : null,
       el('div', { class: 'row' }, summarizeBtn, slidesBtn, stopBtn),
       progress, stream),
+
+    el('section', { class: 'block' },
+      el('h3', {}, el('span', { class: 'step', text: '4' }), 'Revisar com flashcards'),
+      el('p', { class: 'muted small', text: cards.length ? `${cards.length} cartões nesta aula · ${due} para revisar agora` : 'A Claude cria perguntas e respostas a partir da aula, do resumo e dos slides. Você revisa e o app repete mais o que você errar.' }),
+      el('div', { class: 'cards-bar' }, cardsBtn, reviewBtn)),
+
+    el('section', { class: 'block' },
+      el('h3', {}, el('span', { class: 'step', text: '5' }), 'Tirar dúvida sobre a aula'),
+      chatBox),
 
     renderSlideAnalysis(lecture),
     renderSummary(lecture),
@@ -963,8 +1090,12 @@ function dropSlideCache(id) {
   ui.slideCache.delete(id);
 }
 async function deleteLectureAssets(lecture) {
-  if (!store.assets || !lecture.slides) return;
-  const ids = [lecture.slides.pdfAssetId, ...(lecture.slides.imageAssetIds || [])].filter(Boolean);
+  if (!store.assets) return;
+  const ids = [
+    lecture.audio && lecture.audio.assetId,
+    lecture.slides && lecture.slides.pdfAssetId,
+    ...((lecture.slides && lecture.slides.imageAssetIds) || []),
+  ].filter(Boolean);
   for (const id of ids) { try { await store.assets.delete(id); } catch { /* já removido */ } }
 }
 function canvasToBlob(canvas, quality = 0.82) {
@@ -1107,9 +1238,12 @@ const thumbLoading = new Set();
 function fillThumbs(lecture, container) {
   const cached = ui.slideCache.get(lecture.id);
   const pages = lecture.slides.pages;
-  container.replaceChildren(...pages.map((p, i) => el('figure', {},
-    cached && cached.urls[i] ? el('img', { src: cached.urls[i], alt: `Slide ${p.n}`, loading: 'lazy' }) : el('div', { class: 'thumb-ph', 'aria-hidden': 'true' }),
-    el('figcaption', { text: `Slide ${p.n}` }))));
+  container.replaceChildren(...pages.map((p, i) => el('button', {
+    class: 'thumb', title: `Escrever no slide ${p.n}`, 'aria-label': `Escrever no slide ${p.n}`,
+    onclick: () => annotateSlides(lecture, [i]),
+  },
+    cached && cached.urls[i] ? el('img', { src: cached.urls[i], alt: '', loading: 'lazy' }) : el('div', { class: 'thumb-ph', 'aria-hidden': 'true' }),
+    el('span', { class: 'muted small', text: `Slide ${p.n}` }))));
   if (!cached && !thumbLoading.has(lecture.id)) {
     thumbLoading.add(lecture.id);
     loadSlideImages(lecture).finally(() => {
@@ -1129,6 +1263,9 @@ const ERRORS = {
   sampling_disabled: 'O uso da Claude por páginas está desligado na sua conta.',
   invalid_json: 'A resposta veio incompleta. Tente de novo.',
   images_unavailable: 'Este aparelho não consegue enviar imagens; vou usar só o texto dos slides.',
+  slides_missing: 'Não encontrei as imagens dos slides. Envie o PDF ou as fotos de novo.',
+  audio_too_large: 'O áudio é grande demais (limite de 20 MB).',
+  audio_failed: 'Não foi possível guardar o áudio. Tente de novo.',
 };
 const errorText = (e) => (e && ERRORS[e.code]) || 'Não foi possível falar com a Claude agora. Tente de novo em instantes.';
 
@@ -1262,6 +1399,204 @@ ${digest}`, { signal: busy.ctl.signal, onText: onStream(lecture, busy) });
     lecture.slideAnalysis = { slides, top, at: Date.now() };
     saveLecture(lecture);
     toast('Análise dos slides pronta');
+  });
+}
+
+/* ---------- Escrever sobre os slides ---------- */
+async function annotateSlides(lecture, indexes) {
+  if (!store.assets) { toast('Para escrever nos slides, abra o caderno no claude.ai com a sua conta.'); return; }
+  if (ui.busy.get(lecture.id)) return;
+  await runBusy(lecture, 'annotate', 'Preparando os slides para escrever…', async (busy) => {
+    const images = await loadSlideImages(lecture);
+    if (!images) throw { code: 'slides_missing' };
+    const created = [];
+    let next = pagesOf(lecture.notebookId).reduce((m, p) => Math.max(m, p.index), -1) + 1;
+    for (const i of indexes) {
+      if (busy.ctl.signal.aborted) break;
+      const blob = images.blobs[i];
+      if (!blob) continue;
+      busy.label = indexes.length > 1 ? `Criando página do slide ${i + 1} (${created.length + 1} de ${indexes.length})…` : `Criando página do slide ${i + 1}…`;
+      refreshDetailIfOpen(lecture.id);
+      const asset = await store.assets.upload(blob);
+      const page = {
+        id: uid(), notebookId: lecture.notebookId, index: next++, strokes: [], updatedAt: Date.now(),
+        bg: { assetId: asset.id }, label: `${lecture.title} · slide ${i + 1}`,
+      };
+      store.pages.set(page.id, page);
+      saveDoc('pages', page.id, stripId(page));
+      created.push(page);
+    }
+    if (!created.length) return;
+    touchNotebook(lecture.notebookId);
+    openPage(created[0].id);
+    setTab('notes');
+    toast(created.length > 1 ? `${created.length} slides viraram páginas do caderno` : 'Slide aberto para escrever');
+  });
+}
+
+/* ---------- Áudio do gravador ---------- */
+function audioUploadType(file) {
+  const name = (file.name || '').toLowerCase();
+  if (file.type === 'audio/webm' || file.type === 'video/webm' || name.endsWith('.webm')) return 'video/webm';
+  if (/^(audio|video)\/(mp4|x-m4a|m4a|aac)$/.test(file.type) || /\.(m4a|mp4|aac)$/.test(name)) return 'video/mp4';
+  return null;
+}
+async function attachAudio(lecture, file) {
+  if (!store.assets) { toast('Para guardar o áudio, abra o caderno no claude.ai com a sua conta.'); return; }
+  const type = audioUploadType(file);
+  if (!type) { toast('Formato não aceito. Exporte a gravação em m4a (padrão do iPhone e da Samsung).'); return; }
+  if (file.size > 20 * 1024 * 1024) { toast('O áudio passa de 20 MB. Exporte em qualidade menor ou divida a gravação.'); return; }
+  await runBusy(lecture, 'audio', 'Enviando o áudio da aula…', async () => {
+    let asset;
+    try {
+      asset = await store.assets.upload(new Blob([file], { type }));
+    } catch (e) {
+      throw { code: e && e.code === 'too_large' ? 'audio_too_large' : 'audio_failed' };
+    }
+    const old = lecture.audio && lecture.audio.assetId;
+    lecture.audio = { assetId: asset.id, name: file.name || 'Gravação da aula', size: file.size };
+    saveLecture(lecture);
+    if (old) store.assets.delete(old).catch(() => {});
+    toast('Áudio anexado à aula');
+  });
+}
+
+/* ---------- Flashcards (revisão espaçada) ---------- */
+const BOX_DAYS = [0, 1, 3, 7, 16, 35];
+const DAY = 24 * 60 * 60 * 1000;
+function dueCount(notebookId) {
+  const now = Date.now();
+  return lecturesOf(notebookId).reduce((n, l) => n + (l.cards || []).filter((c) => c.due <= now).length, 0);
+}
+function studyMaterial(lecture, maxTranscript = 60000) {
+  const parts = [];
+  const s = lecture.summary;
+  if (s) {
+    parts.push('RESUMO: ' + s.resumo);
+    if (s.prova.length) parts.push('PODE CAIR NA PROVA: ' + s.prova.join('; '));
+    if (s.conceitos.length) parts.push('CONCEITOS: ' + s.conceitos.map((c) => `${c.termo}: ${c.explicacao}`).join('; '));
+  }
+  const a = lecture.slideAnalysis;
+  if (a) parts.push('SLIDES:\n' + a.slides.map((x) => `Slide ${x.numero} - ${x.titulo}: ${x.resumo} Prova: ${x.prova.join('; ')}`).join('\n'));
+  else if (lecture.slides) parts.push('TEXTO DOS SLIDES:\n' + lecture.slides.pages.map((p) => `Slide ${p.n}: ${p.text}`).join('\n').slice(0, 30000));
+  const t = (lecture.transcript || '').trim();
+  if (t) parts.push('TRANSCRIÇÃO DA AULA:\n' + (t.length > maxTranscript ? t.slice(0, maxTranscript) + ' [cortada]' : t));
+  return parts.join('\n\n');
+}
+function makeCards(lecture) {
+  if (!store.sample) return;
+  runBusy(lecture, 'cards', 'A Claude está criando os flashcards…', async (busy) => {
+    const existing = (lecture.cards || []).map((c) => c.q).slice(0, 80);
+    const input = `Crie flashcards em português do Brasil para um estudante revisar esta aula para a prova.
+Cada cartão tem uma pergunta curta e objetiva e uma resposta de no máximo 2 frases. Priorize o que o professor disse que cai na prova, definições, fórmulas e relações de causa e efeito. Não invente conteúdo fora do material.
+${existing.length ? 'Não repita estas perguntas que já existem:\n- ' + existing.join('\n- ') + '\n' : ''}
+Responda APENAS com JSON: {"cards": [{"q": "pergunta", "a": "resposta"}]} com 8 a 15 cartões.
+
+Matéria: ${store.notebooks.get(lecture.notebookId)?.title || ''}. Aula: ${lecture.title}.
+
+${studyMaterial(lecture)}`;
+    const data = await store.sample.json(input, { signal: busy.ctl.signal, onText: onStream(lecture, busy), cache: false });
+    const now = Date.now();
+    const fresh = arr(data && data.cards)
+      .map((c) => ({ id: uid(), q: str(c && c.q), a: str(c && c.a), box: 0, due: now }))
+      .filter((c) => c.q && c.a);
+    if (!fresh.length) throw { code: 'invalid_json' };
+    lecture.cards = [...(lecture.cards || []), ...fresh].slice(-300);
+    saveLecture(lecture);
+    toast(`${fresh.length} flashcards criados`);
+  });
+}
+
+const review = { queue: [], index: 0, shown: false };
+function startReview(notebookId, lectureId) {
+  const now = Date.now();
+  let items = [];
+  const lectures = lectureId ? [store.lectures.get(lectureId)].filter(Boolean) : lecturesOf(notebookId);
+  for (const l of lectures) for (const c of l.cards || []) items.push({ lectureId: l.id, cardId: c.id, due: c.due });
+  const due = items.filter((x) => x.due <= now);
+  // Sem cartões vencidos numa aula, revisa todos como treino extra.
+  items = (due.length || !lectureId ? due : items).sort((a, b) => a.due - b.due).slice(0, 40);
+  if (!items.length) { toast('Nenhum cartão para revisar agora.'); return; }
+  review.queue = items;
+  review.index = 0;
+  showReviewCard();
+  $('review').showModal();
+}
+function currentReview() {
+  const item = review.queue[review.index];
+  if (!item) return null;
+  const lecture = store.lectures.get(item.lectureId);
+  const card = lecture && (lecture.cards || []).find((c) => c.id === item.cardId);
+  return card ? { lecture, card } : null;
+}
+function showReviewCard() {
+  let cur = currentReview();
+  while (!cur && review.index < review.queue.length) { review.index++; cur = currentReview(); }
+  if (!cur) {
+    $('review').close();
+    toast('Revisão concluída!');
+    renderLectures();
+    return;
+  }
+  review.shown = false;
+  $('review-title').textContent = cur.lecture.title;
+  $('review-count').textContent = `${review.index + 1} de ${review.queue.length}`;
+  $('review-front').textContent = cur.card.q;
+  $('review-back').textContent = cur.card.a;
+  $('review-back').hidden = true;
+  $('review-grade').hidden = true;
+  $('review-show').hidden = false;
+  $('review-show').focus();
+}
+$('review-show').addEventListener('click', () => {
+  $('review-back').hidden = false;
+  $('review-grade').hidden = false;
+  $('review-show').hidden = true;
+  $('grade-2').focus();
+});
+[0, 1, 2].forEach((g) => $('grade-' + g).addEventListener('click', () => {
+  const cur = currentReview();
+  if (cur) {
+    const c = cur.card;
+    if (g === 0) { c.box = 0; c.due = Date.now() + 10 * 60 * 1000; review.queue.push({ ...review.queue[review.index] }); }
+    else if (g === 1) { c.box = Math.max(1, c.box); c.due = Date.now() + BOX_DAYS[c.box] * DAY; }
+    else { c.box = Math.min(BOX_DAYS.length - 1, c.box + 1); c.due = Date.now() + BOX_DAYS[c.box] * DAY; }
+    saveLecture(cur.lecture);
+  }
+  review.index++;
+  showReviewCard();
+}));
+$('review-close').addEventListener('click', () => $('review').close());
+$('review').addEventListener('close', () => renderLectures());
+
+/* ---------- Tirar dúvida ---------- */
+async function askLecture(lecture, field) {
+  const question = field.value.trim();
+  if (!question || !store.sample || ui.busy.get(lecture.id)) return;
+  field.value = '';
+  lecture.chat = [...(lecture.chat || []), { role: 'user', content: question }].slice(-20);
+  saveLecture(lecture);
+  renderLectures();
+  const log = () => document.getElementById('chat-log');
+  let bubble = null;
+  await runBusy(lecture, 'chat', 'A Claude está pensando…', async (busy) => {
+    const rules = `Você é um professor particular paciente. Responda dúvidas de um estudante brasileiro sobre a aula abaixo, em português simples, com exemplos quando ajudar. Use o material da aula como base; se a resposta não estiver nele, explique o conceito e avise que não foi visto na aula. Seja direto: no máximo 3 parágrafos curtos, sem Markdown.
+
+Matéria: ${store.notebooks.get(lecture.notebookId)?.title || ''}. Aula: ${lecture.title}.
+
+${studyMaterial(lecture, 80000)}`;
+    const turns = [{ role: 'user', content: rules }, ...lecture.chat];
+    const { text } = await store.sample(turns, {
+      signal: busy.ctl.signal, cache: false,
+      onText: ({ text }) => {
+        const l = log();
+        if (!l) return;
+        if (!bubble || !bubble.isConnected) { bubble = el('div', { class: 'msg assistant' }); l.append(bubble); }
+        bubble.textContent = text;
+      },
+    });
+    lecture.chat = [...lecture.chat, { role: 'assistant', content: text.trim() }].slice(-20);
+    saveLecture(lecture);
   });
 }
 

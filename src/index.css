@@ -189,6 +189,12 @@ code {
   }
   .lecture-panel {
     max-height: none;
+    order: 1;
+    border-top: none;
+    border-bottom: 1px solid var(--border);
+  }
+  .workspace {
+    order: 2;
   }
 }
 

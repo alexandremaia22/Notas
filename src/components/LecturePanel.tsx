@@ -100,8 +100,9 @@ export function LecturePanel({ notebookId, recordings, aiConfigured, onSave, onU
       )}
 
       {!aiConfigured && (
-        <p className="warning small-text">
-          Resumos com IA desativados: defina <code>ANTHROPIC_API_KEY</code> no arquivo <code>.env</code> do servidor.
+        <p className="muted small-text">
+          Depois de gravar, toque em <strong>Copiar transcrição</strong> e cole na aula do Caderno de Estudos para
+          resumir, analisar os slides e criar flashcards.
         </p>
       )}
 

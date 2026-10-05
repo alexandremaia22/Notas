@@ -34,6 +34,7 @@ export function useLectureRecorder() {
   const [speechWarning, setSpeechWarning] = useState<string | null>(null)
 
   const sessionRef = useRef<Session | null>(null)
+  const wakeLockRef = useRef<WakeLockSentinel | null>(null)
   const transcriptRef = useRef('')
   const interimRef = useRef('')
 
@@ -51,6 +52,36 @@ export function useLectureRecorder() {
     }, 500)
     return () => window.clearInterval(timer)
   }, [status])
+
+  // Mantém a tela acesa durante a aula: no celular, a gravação para quando a tela apaga.
+  const acquireWakeLock = useCallback(async () => {
+    if (!('wakeLock' in navigator) || wakeLockRef.current) return
+    try {
+      const sentinel = await navigator.wakeLock.request('screen')
+      sentinel.addEventListener('release', () => {
+        if (wakeLockRef.current === sentinel) wakeLockRef.current = null
+      })
+      wakeLockRef.current = sentinel
+    } catch {
+      // Sem permissão ou sem suporte: segue gravando normalmente.
+    }
+  }, [])
+
+  const releaseWakeLock = useCallback(() => {
+    const sentinel = wakeLockRef.current
+    wakeLockRef.current = null
+    sentinel?.release().catch(() => undefined)
+  }, [])
+
+  useEffect(() => {
+    if (status !== 'recording') return
+    // O navegador solta a trava quando a aba fica oculta; pede de novo ao voltar.
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') void acquireWakeLock()
+    }
+    document.addEventListener('visibilitychange', onVisible)
+    return () => document.removeEventListener('visibilitychange', onVisible)
+  }, [status, acquireWakeLock])
 
   const createRecognition = useCallback((session: Session): Promise<void> => {
     const Recognition = getSpeechRecognition()
@@ -156,7 +187,8 @@ export function useLectureRecorder() {
     sessionRef.current = session
     session.recognitionEnded = createRecognition(session)
     setStatus('recording')
-  }, [createRecognition, recordingSupported])
+    void acquireWakeLock()
+  }, [acquireWakeLock, createRecognition, recordingSupported])
 
   const stop = useCallback(async (): Promise<FinishedRecording | null> => {
     const session = sessionRef.current
@@ -174,6 +206,7 @@ export function useLectureRecorder() {
     await Promise.all([recorderStopped, Promise.race([session.recognitionEnded, timeout])])
     session.recognition?.abort()
     session.stream.getTracks().forEach((track) => track.stop())
+    releaseWakeLock()
 
     // Trechos ainda não finalizados pelo reconhecedor também entram na transcrição.
     const finalTranscript = appendTranscript(transcriptRef.current, interimRef.current)
@@ -193,7 +226,7 @@ export function useLectureRecorder() {
     setElapsedMs(0)
     setStatus('idle')
     return result
-  }, [])
+  }, [releaseWakeLock])
 
   useEffect(() => {
     return () => {
@@ -204,6 +237,8 @@ export function useLectureRecorder() {
       if (session.recorder.state !== 'inactive') session.recorder.stop()
       session.stream.getTracks().forEach((track) => track.stop())
       sessionRef.current = null
+      wakeLockRef.current?.release().catch(() => undefined)
+      wakeLockRef.current = null
     }
   }, [])
 
